@@ -105,6 +105,7 @@ The script reports:
 - Top-1 accuracy
 - Top-3 accuracy
 - Average latency (ms)
+- JSON artifact at `artifacts/benchmark_results.json`
 
 ---
 
@@ -188,7 +189,7 @@ curl http://localhost:8000/health
 ### Option A: Render (recommended for first public demo)
 
 1. Push this repository to GitHub.
-2. In Render, create a new Web Service from the repo.
+2. In Render, create a new Web Service from the repo (or use `render.yaml`).
 3. Configure:
   - Runtime: `Docker`
   - Branch: your deployment branch
@@ -202,13 +203,18 @@ curl https://<your-render-service>/health
 ### Option B: Railway
 
 1. Create a new Railway project from this GitHub repo.
-2. Use Docker-based deployment (auto-detected from `Dockerfile`).
+2. Use Docker-based deployment (auto-detected from `Dockerfile` or `railway.toml`).
 3. Set environment variables if needed (`LOG_LEVEL`, etc.).
 4. Verify:
 
 ```bash
 curl https://<your-railway-service>/health
 ```
+
+Deployment manifests included:
+
+- `render.yaml`
+- `railway.toml`
 
 ### Local Docker note
 
