@@ -3,6 +3,7 @@
 from pathlib import Path
 from typing import Optional
 
+from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
 
 
@@ -41,11 +42,12 @@ class Settings(BaseSettings):
     cors_allow_methods: list = ["*"]
     cors_allow_headers: list = ["*"]
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = False
-        extra = "allow"  # Allow extra fields from .env
+    model_config = ConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="allow",  # Allow extra fields from .env
+    )
 
     @property
     def data_path(self) -> Path:

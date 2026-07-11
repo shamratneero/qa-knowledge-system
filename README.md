@@ -214,9 +214,7 @@ curl -X POST http://127.0.0.1:8000/ask \
 
 Start the server and visit **http://127.0.0.1:8000/docs**:
 
-![Swagger UI](docs/swagger-screenshot.png)
-
-> Add a screenshot of your running Swagger UI to `docs/swagger-screenshot.png` for the README.
+Use the live `/docs` page for interactive testing.
 
 ---
 
@@ -242,6 +240,9 @@ pytest -m "not slow" -v
 
 # All tests including semantic/hybrid (downloads ML model on first run)
 pytest -v
+
+# Run benchmark harness
+python scripts/benchmark.py
 ```
 
 ---
