@@ -47,30 +47,63 @@ class QuestionRequest(BaseModel):
 class SearchResult(BaseModel):
     """A single knowledge-base match."""
 
-    id: int | str | None = None
-    question: str
-    answer: str
+    id: int | str | None = Field(default=None, description="Knowledge entry identifier.")
+    question: str = Field(description="Matched question text from the knowledge base.")
+    answer: str = Field(description="Matched answer text from the knowledge base.")
     category: Optional[str] = None
     keywords: Optional[str] = None
-    score: float
-    confidence: float
+    score: float = Field(description="Raw score produced by the selected search method.")
+    confidence: float = Field(description="Normalized confidence score in the range 0 to 1.")
 
 
 class AskResponse(BaseModel):
     """Successful search response."""
 
-    found: bool = True
-    query: str
-    method: str
+    found: bool = Field(default=True, description="Whether at least one relevant result was found.")
+    query: str = Field(description="The original user query.")
+    method: str = Field(description="Search strategy used to produce ranking.")
     answer: str = Field(description="Best-matching answer from the knowledge base.")
     score: float = Field(description="Confidence score of the top result (0–1).")
     results: list[SearchResult]
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "found": True,
+                    "query": "What is machine learning?",
+                    "method": "hybrid",
+                    "answer": "Machine Learning is a subset of AI that learns patterns from data.",
+                    "score": 0.87,
+                    "results": [
+                        {
+                            "id": 2,
+                            "question": "What is Machine Learning?",
+                            "answer": "Machine Learning is a subset of AI that learns patterns from data.",
+                            "category": "ML",
+                            "keywords": "Machine Learning,ML",
+                            "score": 0.87,
+                            "confidence": 0.87,
+                        }
+                    ],
+                }
+            ]
+        }
+    }
 
 
 class ErrorResponse(BaseModel):
     """Standard error payload."""
 
-    detail: str
+    detail: str = Field(description="Human-readable error description.")
+
+
+class RootResponse(BaseModel):
+    """Root endpoint payload."""
+
+    message: str
+    docs: str
+    health: str
 
 
 class HealthResponse(BaseModel):
@@ -86,6 +119,7 @@ __all__ = [
     "ErrorResponse",
     "HealthResponse",
     "QuestionRequest",
+    "RootResponse",
     "SearchMethod",
     "SearchResult",
 ]

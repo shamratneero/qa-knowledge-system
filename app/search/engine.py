@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from typing import Any, Dict
 import re
-from pathlib import Path
+import time
 
 import pandas as pd
 
+from ..core.logging import logger
 from ..core.loader import load_knowledge_base
 
 
@@ -55,11 +56,15 @@ def search(query: str, top_n: int = 5) -> Dict[str, Any]:
     logic can be swapped for semantic embeddings later without changing callers.
     """
 
+    start = time.perf_counter()
+
     if _KB_DF is None:
+        logger.error("keyword_search kb_not_loaded query=%r", query)
         return {"found": False, "message": f"Knowledge base not loaded: {_KB_LOAD_ERROR}"}
 
     query_norm = _normalize(query)
     if not query_norm:
+        logger.warning("keyword_search empty_query")
         return {"found": False, "message": "Empty query."}
 
     scored = []
@@ -79,6 +84,13 @@ def search(query: str, top_n: int = 5) -> Dict[str, Any]:
             )
 
     if not scored:
+        elapsed_ms = (time.perf_counter() - start) * 1000
+        logger.info(
+            "keyword_search no_match query=%r top_n=%d elapsed_ms=%.1f",
+            query,
+            top_n,
+            elapsed_ms,
+        )
         return {"found": False, "message": "No matching answer found."}
 
     # compute confidence (max possible score is 6)
@@ -86,6 +98,15 @@ def search(query: str, top_n: int = 5) -> Dict[str, Any]:
         r["confidence"] = round(r["score"] / 6.0, 3)
 
     scored.sort(key=lambda x: x["score"], reverse=True)
+
+    elapsed_ms = (time.perf_counter() - start) * 1000
+    logger.info(
+        "keyword_search match query=%r top_n=%d candidates=%d elapsed_ms=%.1f",
+        query,
+        top_n,
+        len(scored),
+        elapsed_ms,
+    )
 
     return {"found": True, "query": query, "results": scored[:top_n], "method": "keyword"}
 
