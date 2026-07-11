@@ -257,6 +257,16 @@ git push origin v1.0.0
 
 Tag pushes trigger the release workflow in `.github/workflows/release.yml`.
 
+Optional helper script:
+
+```bash
+bash scripts/release/prepare_release.sh v1.0.1
+```
+
+This script runs fast tests, runs benchmark, checks for clean git state, and creates an annotated local tag.
+
+Project release notes are tracked in `CHANGELOG.md`.
+
 ---
 
 ## API Endpoints
