@@ -1,8 +1,17 @@
-from pydantic import BaseModel
+from .schemas import (
+    AskResponse,
+    ErrorResponse,
+    HealthResponse,
+    QuestionRequest,
+    SearchMethod,
+    SearchResult,
+)
 
-
-class QuestionRequest(BaseModel):
-    question: str
-
-
-__all__ = ["QuestionRequest"]
+__all__ = [
+    "AskResponse",
+    "ErrorResponse",
+    "HealthResponse",
+    "QuestionRequest",
+    "SearchMethod",
+    "SearchResult",
+]

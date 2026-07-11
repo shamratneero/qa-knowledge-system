@@ -87,7 +87,7 @@ def search(query: str, top_n: int = 5) -> Dict[str, Any]:
 
     scored.sort(key=lambda x: x["score"], reverse=True)
 
-    return {"found": True, "query": query, "results": scored[:top_n]}
+    return {"found": True, "query": query, "results": scored[:top_n], "method": "keyword"}
 
 
 __all__ = ["search"]
