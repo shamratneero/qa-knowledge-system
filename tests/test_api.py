@@ -24,6 +24,12 @@ class TestHealth:
         assert "docs" in data
         assert "health" in data
 
+    def test_ui_route(self, client):
+        response = client.get("/ui")
+        assert response.status_code == 200
+        assert "text/html" in response.headers.get("content-type", "")
+        assert "Ask the Knowledge Base" in response.text
+
     def test_request_id_header_added(self, client):
         response = client.get("/health")
         assert response.status_code == 200

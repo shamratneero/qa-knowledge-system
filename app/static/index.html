@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Q&A Knowledge System</title>
+    <style>
+      :root {
+        --bg: #f4f7fb;
+        --card: #ffffff;
+        --text: #132238;
+        --muted: #5c6b7a;
+        --accent: #0f766e;
+        --accent-2: #0ea5e9;
+        --border: #d5e2ee;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at 10% 10%, #dff6ff 0%, transparent 35%),
+          radial-gradient(circle at 90% 0%, #dcfce7 0%, transparent 30%),
+          var(--bg);
+      }
+      .wrap {
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+      }
+      .card {
+        width: min(920px, 100%);
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 22px;
+        box-shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: clamp(1.4rem, 3vw, 2rem);
+      }
+      .sub {
+        margin: 0 0 18px;
+        color: var(--muted);
+      }
+      .row {
+        display: grid;
+        gap: 12px;
+      }
+      .controls {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: 1fr 150px 110px;
+      }
+      input, select, button {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 12px;
+        font-size: 1rem;
+      }
+      input:focus, select:focus {
+        outline: none;
+        border-color: var(--accent-2);
+        box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
+      }
+      button {
+        background: linear-gradient(120deg, var(--accent), var(--accent-2));
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+      }
+      button:disabled { opacity: 0.6; cursor: not-allowed; }
+      .status {
+        min-height: 24px;
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+      .result {
+        margin-top: 12px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 14px;
+        background: #fcfeff;
+      }
+      .answer {
+        margin: 0 0 8px;
+        line-height: 1.5;
+      }
+      .meta {
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+      .list {
+        margin-top: 12px;
+        padding-left: 18px;
+      }
+      .list li { margin: 6px 0; }
+      .error {
+        color: #b42318;
+        background: #fff1f1;
+        border: 1px solid #f7caca;
+        border-radius: 10px;
+        padding: 10px;
+      }
+      @media (max-width: 760px) {
+        .controls { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <main class="card">
+        <h1>Ask the Knowledge Base</h1>
+        <p class="sub">Search via keyword, fuzzy, semantic, or hybrid ranking.</p>
+
+        <div class="row">
+          <div class="controls">
+            <input id="q" type="text" placeholder="Type your question..." />
+            <select id="method">
+              <option value="hybrid">hybrid</option>
+              <option value="keyword">keyword</option>
+              <option value="fuzzy">fuzzy</option>
+              <option value="semantic">semantic</option>
+            </select>
+            <button id="askBtn">Search</button>
+          </div>
+          <div id="status" class="status"></div>
+        </div>
+
+        <section id="output"></section>
+      </main>
+    </div>
+
+    <script>
+      const qEl = document.getElementById("q");
+      const methodEl = document.getElementById("method");
+      const askBtn = document.getElementById("askBtn");
+      const output = document.getElementById("output");
+      const statusEl = document.getElementById("status");
+
+      function setStatus(text) {
+        statusEl.textContent = text || "";
+      }
+
+      function renderError(message) {
+        output.innerHTML = `<div class="error">${message}</div>`;
+      }
+
+      function renderResult(data) {
+        const top = data.results?.[0];
+        if (!top) {
+          renderError("No result payload returned.");
+          return;
+        }
+
+        const list = (data.results || [])
+          .slice(0, 5)
+          .map(
+            (r) => `<li><strong>${r.question}</strong> <span class="meta">(confidence: ${Number(r.confidence || 0).toFixed(3)})</span></li>`
+          )
+          .join("");
+
+        output.innerHTML = `
+          <div class="result">
+            <p class="answer"><strong>Answer:</strong> ${top.answer}</p>
+            <p class="meta">Method: ${data.method} | Score: ${Number(data.score || 0).toFixed(3)}</p>
+            <ul class="list">${list}</ul>
+          </div>
+        `;
+      }
+
+      async function ask() {
+        const question = qEl.value.trim();
+        const method = methodEl.value;
+
+        if (!question) {
+          renderError("Please enter a question.");
+          return;
+        }
+
+        askBtn.disabled = true;
+        setStatus("Searching...");
+        output.innerHTML = "";
+
+        try {
+          const res = await fetch("/ask", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ question, method, top_n: 5 }),
+          });
+
+          const data = await res.json();
+
+          if (!res.ok) {
+            renderError(data.detail || "Request failed.");
+            return;
+          }
+
+          renderResult(data);
+          setStatus("Done");
+        } catch (err) {
+          renderError("Network error. Ensure the API server is running.");
+        } finally {
+          askBtn.disabled = false;
+        }
+      }
+
+      askBtn.addEventListener("click", ask);
+      qEl.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") ask();
+      });
+    </script>
+  </body>
+</html>
