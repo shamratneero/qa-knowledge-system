@@ -5,6 +5,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 
 from ..core.config import settings
+from ..core.logging import logger
 from ..models.database import Base, Knowledge
 
 
@@ -26,7 +27,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 def init_db():
     """Initialize the database (create tables)."""
     Base.metadata.create_all(bind=engine)
-    print(f"Database initialized at {DB_FILE}")
+    logger.info("Database initialized at %s", DB_FILE)
 
 
 def get_db() -> Session:
@@ -42,7 +43,7 @@ def migrate_from_excel():
     """Migrate data from Excel knowledge base to SQLite."""
     from ..core.loader import load_knowledge_base
 
-    print("Migrating data from Excel to SQLite...")
+    logger.info("Migrating data from Excel to SQLite...")
     init_db()
 
     # Clear existing data
@@ -67,7 +68,7 @@ def migrate_from_excel():
 
     db.commit()
     db.close()
-    print(f"Migrated {len(df)} entries to SQLite")
+    logger.info("Migrated %d entries to SQLite", len(df))
 
 
 __all__ = ["engine", "SessionLocal", "get_db", "init_db", "migrate_from_excel", "Knowledge", "DATABASE_URL"]

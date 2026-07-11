@@ -115,8 +115,11 @@ venv.bak/
 .dmypy.json
 dmypy.json
 
-# Pyre type checker
-.pyre/
+# Embedding cache
+.cache/
+
+# SQLite database (generated locally)
+data/knowledge.db
 
 # IDE
 .vscode/

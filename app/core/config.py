@@ -31,6 +31,10 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     log_file: Optional[Path] = None
 
+    def model_post_init(self, __context: object) -> None:
+        if self.log_file is not None and not str(self.log_file).strip():
+            self.log_file = None
+
     # CORS
     cors_origins: list = ["*"]
     cors_allow_credentials: bool = True

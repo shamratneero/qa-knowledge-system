@@ -12,6 +12,7 @@ import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
 
 from ..core.loader import load_knowledge_base
+from ..core.logging import logger
 
 
 try:
@@ -32,7 +33,7 @@ def _get_model():
     """Lazily load the embedding model."""
     global _model
     if _model is None:
-        print(f"Loading embedding model: {_model_name}")
+        logger.info("Loading embedding model: %s", _model_name)
         _model = SentenceTransformer(_model_name)
     return _model
 
@@ -51,13 +52,13 @@ def _load_or_create_embeddings():
                 cached = pickle.load(f)
                 if cached.get("kb_hash") == hash(_KB_DF.to_json()):
                     _kb_embeddings = cached["embeddings"]
-                    print("Loaded embeddings from cache")
+                    logger.info("Loaded embeddings from cache")
                     return _kb_embeddings
         except Exception as e:
-            print(f"Cache load failed: {e}, regenerating...")
+            logger.warning("Cache load failed: %s, regenerating...", e)
 
     # Create embeddings
-    print("Creating embeddings...")
+    logger.info("Creating embeddings for %d questions", len(_KB_DF))
     model = _get_model()
 
     texts = [str(_KB_DF.iloc[i]["question"]) for i in range(len(_KB_DF))]
@@ -140,7 +141,7 @@ def clear_embedding_cache():
     if _EMBEDDING_CACHE_FILE.exists():
         _EMBEDDING_CACHE_FILE.unlink()
     _kb_embeddings = None
-    print("Embedding cache cleared")
+    logger.info("Embedding cache cleared")
 
 
 __all__ = ["search_semantic", "clear_embedding_cache"]
