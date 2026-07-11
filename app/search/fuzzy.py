@@ -4,11 +4,12 @@ from __future__ import annotations
 
 from typing import Any, Dict
 import re
-from pathlib import Path
+import time
 
 import pandas as pd
 from rapidfuzz import fuzz
 
+from ..core.logging import logger
 from ..core.loader import load_knowledge_base
 
 
@@ -66,11 +67,15 @@ def search_fuzzy(query: str, top_n: int = 5, threshold: int = 80) -> Dict[str, A
         Dict with 'found' boolean and either 'results' or 'message'
     """
 
+    start = time.perf_counter()
+
     if _KB_DF is None:
+        logger.error("fuzzy_search kb_not_loaded query=%r", query)
         return {"found": False, "message": f"Knowledge base not loaded: {_KB_LOAD_ERROR}"}
 
     query_norm = _normalize(query)
     if not query_norm:
+        logger.warning("fuzzy_search empty_query")
         return {"found": False, "message": "Empty query."}
 
     scored = []
@@ -90,6 +95,14 @@ def search_fuzzy(query: str, top_n: int = 5, threshold: int = 80) -> Dict[str, A
             )
 
     if not scored:
+        elapsed_ms = (time.perf_counter() - start) * 1000
+        logger.info(
+            "fuzzy_search no_match query=%r top_n=%d threshold=%d elapsed_ms=%.1f",
+            query,
+            top_n,
+            threshold,
+            elapsed_ms,
+        )
         return {"found": False, "message": "No matching answer found."}
 
     # compute confidence (max possible score is 14)
@@ -97,6 +110,16 @@ def search_fuzzy(query: str, top_n: int = 5, threshold: int = 80) -> Dict[str, A
         r["confidence"] = round(min(r["score"] / 14.0, 1.0), 3)
 
     scored.sort(key=lambda x: x["score"], reverse=True)
+
+    elapsed_ms = (time.perf_counter() - start) * 1000
+    logger.info(
+        "fuzzy_search match query=%r top_n=%d threshold=%d candidates=%d elapsed_ms=%.1f",
+        query,
+        top_n,
+        threshold,
+        len(scored),
+        elapsed_ms,
+    )
 
     return {"found": True, "query": query, "results": scored[:top_n], "method": "fuzzy"}
 

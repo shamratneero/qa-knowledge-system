@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import time
+import uuid
 from typing import Any
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.requests import Request
 
 from app.core.config import settings
 from app.core.logging import logger
@@ -15,6 +17,7 @@ from app.models.schemas import (
     ErrorResponse,
     HealthResponse,
     QuestionRequest,
+    RootResponse,
     SearchResult,
 )
 from app.search.hybrid import search_hybrid
@@ -38,6 +41,36 @@ app.add_middleware(
     allow_methods=settings.cors_allow_methods,
     allow_headers=settings.cors_allow_headers,
 )
+
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
+    start = time.perf_counter()
+    try:
+        response = await call_next(request)
+    except Exception:
+        elapsed_ms = (time.perf_counter() - start) * 1000
+        logger.exception(
+            "request_failed id=%s method=%s path=%s elapsed_ms=%.1f",
+            request_id,
+            request.method,
+            request.url.path,
+            elapsed_ms,
+        )
+        raise
+
+    elapsed_ms = (time.perf_counter() - start) * 1000
+    response.headers["X-Request-ID"] = request_id
+    logger.info(
+        "request_done id=%s method=%s path=%s status=%d elapsed_ms=%.1f",
+        request_id,
+        request.method,
+        request.url.path,
+        response.status_code,
+        elapsed_ms,
+    )
+    return response
 
 
 def _build_response(result: dict[str, Any]) -> AskResponse:
@@ -64,7 +97,12 @@ def _build_response(result: dict[str, Any]) -> AskResponse:
     )
 
 
-@app.get("/", tags=["Root"])
+@app.get(
+    "/",
+    response_model=RootResponse,
+    tags=["Root"],
+    summary="API info",
+)
 def home():
     return {
         "message": "Q&A Knowledge System API is running!",
@@ -92,9 +130,12 @@ def health():
     response_model=AskResponse,
     tags=["Knowledge Base"],
     summary="Search the knowledge base",
+    description="Accepts a user question and returns ranked matches with confidence scores.",
     responses={
-        200: {"description": "Matching answer found."},
-        404: {"description": "No matching answer found."},
+        200: {"description": "Matching answer found.", "model": AskResponse},
+        404: {"description": "No matching answer found.", "model": ErrorResponse},
+        422: {"description": "Invalid request payload.", "model": ErrorResponse},
+        500: {"description": "Internal search error.", "model": ErrorResponse},
     },
 )
 def ask_question(request: QuestionRequest) -> AskResponse:

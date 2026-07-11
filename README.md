@@ -1,8 +1,17 @@
 # Q&A Knowledge System
 
-An Excel-powered question-answering API that combines **keyword**, **fuzzy**, **semantic**, and **hybrid** search to retrieve answers from a structured knowledge base.
+An Excel-powered question-answering API that combines **keyword**, **fuzzy**, **semantic**, and **hybrid** retrieval to return ranked answers with confidence scores.
 
 Built with FastAPI, sentence-transformers, and RapidFuzz.
+
+## Why This Project
+
+This project is designed to demonstrate practical backend engineering and applied AI retrieval in a single system:
+
+- API design and schema validation with FastAPI + Pydantic
+- retrieval quality improvements from exact matching to semantic search
+- measurable quality via benchmark metrics and automated tests
+- production readiness with Docker and CI
 
 ---
 
@@ -15,6 +24,31 @@ Built with FastAPI, sentence-transformers, and RapidFuzz.
 - **Structured logging** — query, method, score, and latency logged on every request
 - **Docker-ready** — run with a single `docker compose up`
 - **CI pipeline** — GitHub Actions runs tests on every push
+
+## Quick Demo
+
+1. Start the API:
+
+```bash
+source .venv/bin/activate
+uvicorn app.main:app --reload
+```
+
+2. Open interactive docs:
+
+```text
+http://127.0.0.1:8000/docs
+```
+
+3. Ask a question:
+
+```json
+{
+  "question": "What is AI?",
+  "method": "hybrid",
+  "top_n": 3
+}
+```
 
 ---
 
@@ -57,6 +91,20 @@ sequenceDiagram
     H-->>A: ranked results + confidence
     A-->>U: {answer, score, method, results}
 ```
+
+## Benchmark Snapshot
+
+Use the built-in harness to evaluate retrieval quality and response latency:
+
+```bash
+python scripts/benchmark.py
+```
+
+The script reports:
+
+- Top-1 accuracy
+- Top-3 accuracy
+- Average latency (ms)
 
 ---
 
@@ -107,7 +155,7 @@ Qs/
 git clone https://github.com/shamratneero/qa-knowledge-system.git
 cd qa-knowledge-system
 
-python3 -m venv venv
+python3 -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
 
 pip install -r requirements.txt
@@ -133,6 +181,42 @@ Verify container health:
 
 ```bash
 curl http://localhost:8000/health
+```
+
+## Deployment Guide
+
+### Option A: Render (recommended for first public demo)
+
+1. Push this repository to GitHub.
+2. In Render, create a new Web Service from the repo.
+3. Configure:
+  - Runtime: `Docker`
+  - Branch: your deployment branch
+  - Port: `8000`
+4. Deploy and verify:
+
+```bash
+curl https://<your-render-service>/health
+```
+
+### Option B: Railway
+
+1. Create a new Railway project from this GitHub repo.
+2. Use Docker-based deployment (auto-detected from `Dockerfile`).
+3. Set environment variables if needed (`LOG_LEVEL`, etc.).
+4. Verify:
+
+```bash
+curl https://<your-railway-service>/health
+```
+
+### Local Docker note
+
+If `docker build` fails with daemon connection errors, start Docker Desktop first and retry:
+
+```bash
+docker build -t qa-knowledge-system:local .
+docker compose up --build
 ```
 
 ---
@@ -279,6 +363,13 @@ Set via environment variables or a `.env` file:
 - [ ] **Frontend** — simple React/Next.js question-answer UI
 - [ ] **Live deployment** — deploy to Railway, Render, or Azure
 - [ ] **SQLite integration** — wire database layer into search for dynamic KB updates
+
+## Recruiter Highlights
+
+- clear API contracts (`/ask` with validated request/response models)
+- multiple retrieval strategies with confidence scoring
+- automated test coverage for loader, search, API, and edge cases
+- CI workflow and containerized runtime for reproducibility
 
 ---
 

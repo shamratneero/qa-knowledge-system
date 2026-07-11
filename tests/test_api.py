@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import time
+
 import pytest
 
 
@@ -17,7 +19,15 @@ class TestHealth:
     def test_root(self, client):
         response = client.get("/")
         assert response.status_code == 200
-        assert "message" in response.json()
+        data = response.json()
+        assert "message" in data
+        assert "docs" in data
+        assert "health" in data
+
+    def test_request_id_header_added(self, client):
+        response = client.get("/health")
+        assert response.status_code == 200
+        assert "X-Request-ID" in response.headers
 
 
 class TestAskEndpoint:
@@ -63,6 +73,25 @@ class TestAskEndpoint:
             json={"question": sample_questions["ai"], "top_n": 0},
         )
         assert response.status_code == 422
+
+    def test_ask_returns_request_id(self, client, sample_questions):
+        response = client.post(
+            "/ask",
+            json={"question": sample_questions["ai"], "method": "keyword"},
+        )
+        assert response.status_code == 200
+        assert "X-Request-ID" in response.headers
+
+    def test_keyword_performance_smoke(self, client, sample_questions):
+        start = time.perf_counter()
+        response = client.post(
+            "/ask",
+            json={"question": sample_questions["ai"], "method": "keyword"},
+        )
+        elapsed_ms = (time.perf_counter() - start) * 1000
+        assert response.status_code == 200
+        # generous bound to avoid flaky tests while still catching regressions
+        assert elapsed_ms < 1500
 
     @pytest.mark.slow
     def test_hybrid_search_success(self, client, sample_questions):
