@@ -3,8 +3,8 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-from .models import QuestionRequest
-from .search import search
+from app.models import QuestionRequest
+from app.search import search
 
 
 app = FastAPI(
