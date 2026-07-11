@@ -21,7 +21,8 @@ echo "[2/5] Running benchmark..."
 python scripts/benchmark.py > /tmp/qa_release_benchmark.out
 
 echo "[3/5] Ensuring git workspace is clean..."
-if [[ -n "$(git status --porcelain)" ]]; then
+dirty="$(git status --porcelain | grep -v 'artifacts/benchmark_results.json' || true)"
+if [[ -n "$dirty" ]]; then
   echo "Error: workspace is not clean. Commit or stash changes first."
   git status --short
   exit 1
