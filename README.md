@@ -35,6 +35,31 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
+## Usage
+
+The application expects an Excel knowledge base with the following columns:
+
+- `id`, `question`, `answer`, `category`, `keywords`
+
+By default the app will load `data/knowledge_base.xlsx`. You can also run the CLI and point it at any Excel file:
+
+```bash
+# run with the default file
+python -m app.main
+
+# run with a custom file path
+python -m app.main --file path/to/your-file.xlsx
+# or short form
+python -m app.main -f path/to/your-file.xlsx
+```
+
+The loader will validate required columns and report errors if the file is missing or malformed.
+
+## Notes
+
+- If you have a spreadsheet named like `safeguest-support-tickets-2026-07-03.xlsx`, copy or move it into the `data/` directory and run the CLI with `--file` pointing at it, or rename it to `knowledge_base.xlsx` to use the default path.
+- Development: create and activate a virtual environment before installing dependencies.
+
 ## Project Structure
 
 ```
