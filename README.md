@@ -173,6 +173,19 @@ source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
+## Developer Workflow (Makefile)
+
+You can use `make` commands for common tasks:
+
+```bash
+make run
+make test-fast
+make benchmark
+make smoke
+make preflight
+make release-prep VERSION=v1.0.1
+```
+
 ### Run the API
 
 ```bash
