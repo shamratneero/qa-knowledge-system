@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from .data_loader import load_knowledge_base
+from ..core.loader import load_knowledge_base
 
 
 def _normalize(text: Any) -> str:

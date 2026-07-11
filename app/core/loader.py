@@ -3,7 +3,7 @@ from pathlib import Path
 import pandas as pd
 
 
-DATA_FILE = Path(__file__).resolve().parent.parent / "data" / "knowledge_base.xlsx"
+DATA_FILE = Path(__file__).resolve().parent.parent.parent / "data" / "knowledge_base.xlsx"
 
 
 REQUIRED_COLUMNS = [
