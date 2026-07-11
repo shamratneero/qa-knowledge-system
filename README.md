@@ -30,8 +30,7 @@ This project is designed to demonstrate practical backend engineering and applie
 1. Start the API:
 
 ```bash
-source .venv/bin/activate
-uvicorn app.main:app --reload
+bash scripts/run/start_local.sh
 ```
 
 2. Open interactive docs:
@@ -54,6 +53,12 @@ http://127.0.0.1:8000/ui
   "method": "hybrid",
   "top_n": 3
 }
+```
+
+Optional smoke test (in another terminal):
+
+```bash
+bash scripts/run/smoke_test.sh
 ```
 
 ---
