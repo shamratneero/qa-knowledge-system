@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import time
 import sys
+import json
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -53,12 +54,25 @@ def run_eval():
         if case.expected_id in ids[:3]:
             top3 += 1
 
+    metrics = {
+        "cases": total,
+        "top1_accuracy": top1 / total,
+        "top3_accuracy": top3 / total,
+        "avg_latency_ms": sum(elapsed) / len(elapsed),
+    }
+
+    out_dir = PROJECT_ROOT / "artifacts"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_file = out_dir / "benchmark_results.json"
+    out_file.write_text(json.dumps(metrics, indent=2), encoding="utf-8")
+
     print("Benchmark summary")
     print("-----------------")
-    print(f"Cases: {total}")
-    print(f"Top-1 accuracy: {top1 / total:.2%}")
-    print(f"Top-3 accuracy: {top3 / total:.2%}")
-    print(f"Avg latency: {sum(elapsed) / len(elapsed):.1f} ms")
+    print(f"Cases: {metrics['cases']}")
+    print(f"Top-1 accuracy: {metrics['top1_accuracy']:.2%}")
+    print(f"Top-3 accuracy: {metrics['top3_accuracy']:.2%}")
+    print(f"Avg latency: {metrics['avg_latency_ms']:.1f} ms")
+    print(f"Saved JSON: {out_file}")
 
 
 if __name__ == "__main__":
