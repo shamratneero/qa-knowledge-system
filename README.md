@@ -240,20 +240,26 @@ docker compose up --build
 
 Before creating a release tag:
 
-1. Run tests
+1. Run deployment preflight checks
+
+```bash
+bash scripts/release/preflight.sh
+```
+
+2. Run tests
 
 ```bash
 pytest -m "not slow" -v
 ```
 
-2. Run benchmark and verify artifact
+3. Run benchmark and verify artifact
 
 ```bash
 python scripts/benchmark.py
 cat artifacts/benchmark_results.json
 ```
 
-3. Create and push a version tag
+4. Create and push a version tag
 
 ```bash
 git tag v1.0.0
