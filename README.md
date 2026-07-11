@@ -108,7 +108,7 @@ git clone https://github.com/shamratneero/qa-knowledge-system.git
 cd qa-knowledge-system
 
 python3 -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
 
 pip install -r requirements.txt
 ```
@@ -128,6 +128,12 @@ docker compose up --build
 ```
 
 API available at **http://localhost:8000**.
+
+Verify container health:
+
+```bash
+curl http://localhost:8000/health
+```
 
 ---
 
@@ -244,6 +250,11 @@ pytest -v
 # Run benchmark harness
 python scripts/benchmark.py
 ```
+
+Expected benchmark output includes:
+- Top-1 accuracy
+- Top-3 accuracy
+- Average latency (ms)
 
 ---
 
