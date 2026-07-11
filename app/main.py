@@ -8,6 +8,7 @@ from typing import Any
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from starlette.requests import Request
 
 from app.core.config import settings
@@ -21,6 +22,7 @@ from app.models.schemas import (
     SearchResult,
 )
 from app.search.hybrid import search_hybrid
+from pathlib import Path
 
 
 app = FastAPI(
@@ -33,6 +35,8 @@ app = FastAPI(
         500: {"model": ErrorResponse, "description": "Internal server error."},
     },
 )
+
+STATIC_DIR = Path(__file__).resolve().parent / "static"
 
 app.add_middleware(
     CORSMiddleware,
@@ -109,6 +113,15 @@ def home():
         "docs": "/docs",
         "health": "/health",
     }
+
+
+@app.get(
+    "/ui",
+    tags=["Root"],
+    summary="Minimal frontend UI",
+)
+def ui():
+    return FileResponse(STATIC_DIR / "index.html")
 
 
 @app.get(

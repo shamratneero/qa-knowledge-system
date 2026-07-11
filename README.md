@@ -40,6 +40,12 @@ uvicorn app.main:app --reload
 http://127.0.0.1:8000/docs
 ```
 
+Or open the minimal frontend:
+
+```text
+http://127.0.0.1:8000/ui
+```
+
 3. Ask a question:
 
 ```json
@@ -232,6 +238,7 @@ docker compose up --build
 | Method | Path | Description |
 |--------|------|-------------|
 | `GET` | `/` | API info |
+| `GET` | `/ui` | Minimal browser UI |
 | `GET` | `/health` | Health check |
 | `POST` | `/ask` | Search the knowledge base |
 
