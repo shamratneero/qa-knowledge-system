@@ -2,31 +2,32 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
-import re
+from typing import Any, Dict
 import pickle
 from pathlib import Path
 
-import numpy as np
-import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
 
+from ..core.config import settings
 from ..core.loader import load_knowledge_base
 from ..core.logging import logger
-
 
 try:
     from sentence_transformers import SentenceTransformer
 except ImportError:
-    raise ImportError("sentence-transformers required: pip install sentence-transformers")
+    raise ImportError(
+        "sentence-transformers required: pip install sentence-transformers"
+    )
 
 
 # Model cache
 _model = None
-_model_name = "sentence-transformers/all-MiniLM-L6-v2"
+_model_name = settings.embedding_model_name
 _kb_embeddings = None
 _KB_DF = None
-_EMBEDDING_CACHE_FILE = Path(__file__).resolve().parent.parent.parent / ".cache" / "embeddings.pkl"
+_EMBEDDING_CACHE_FILE = (
+    Path(__file__).resolve().parent.parent.parent / ".cache" / "embeddings.pkl"
+)
 
 
 def _get_model():
@@ -67,16 +68,21 @@ def _load_or_create_embeddings():
     # Cache embeddings
     _EMBEDDING_CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
     with open(_EMBEDDING_CACHE_FILE, "wb") as f:
-        pickle.dump({
-            "embeddings": embeddings,
-            "kb_hash": hash(_KB_DF.to_json()),
-        }, f)
+        pickle.dump(
+            {
+                "embeddings": embeddings,
+                "kb_hash": hash(_KB_DF.to_json()),
+            },
+            f,
+        )
 
     _kb_embeddings = embeddings
     return _kb_embeddings
 
 
-def search_semantic(query: str, top_n: int = 5, threshold: float = 0.3) -> Dict[str, Any]:
+def search_semantic(
+    query: str, top_n: int = 5, threshold: float = 0.3
+) -> Dict[str, Any]:
     """Semantic search using embeddings.
 
     Does NOT match exact keywords, but understands meaning.
@@ -113,15 +119,17 @@ def search_semantic(query: str, top_n: int = 5, threshold: float = 0.3) -> Dict[
     for idx, sim_score in enumerate(similarities):
         if sim_score >= threshold:
             row = _KB_DF.iloc[idx]
-            scored.append({
-                "id": row.get("id"),
-                "question": row.get("question"),
-                "answer": row.get("answer"),
-                "category": row.get("category"),
-                "keywords": row.get("keywords"),
-                "score": float(sim_score),
-                "similarity": float(sim_score),
-            })
+            scored.append(
+                {
+                    "id": row.get("id"),
+                    "question": row.get("question"),
+                    "answer": row.get("answer"),
+                    "category": row.get("category"),
+                    "keywords": row.get("keywords"),
+                    "score": float(sim_score),
+                    "similarity": float(sim_score),
+                }
+            )
 
     if not scored:
         return {"found": False, "message": "No matching answer found."}
@@ -132,7 +140,12 @@ def search_semantic(query: str, top_n: int = 5, threshold: float = 0.3) -> Dict[
     for r in scored:
         r["confidence"] = round(r["similarity"], 3)
 
-    return {"found": True, "query": query, "results": scored[:top_n], "method": "semantic"}
+    return {
+        "found": True,
+        "query": query,
+        "results": scored[:top_n],
+        "method": "semantic",
+    }
 
 
 def clear_embedding_cache():

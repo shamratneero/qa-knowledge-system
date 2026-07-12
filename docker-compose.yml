@@ -1,14 +1,22 @@
 services:
   api:
     build: .
+    container_name: qa-knowledge-api
     ports:
       - "8000:8000"
     volumes:
-      - ./data:/app/data:ro
+      - qa_data:/app/data
     environment:
-      - LOG_LEVEL=INFO
-      - HOST=0.0.0.0
-      - PORT=8000
+      APP_NAME: "AI Conversation Intelligence Platform"
+      APP_DESCRIPTION: "Production FastAPI analytics and knowledge intelligence service"
+      LOG_LEVEL: "INFO"
+      LOG_JSON: "true"
+      HOST: "0.0.0.0"
+      PORT: "8000"
+      MAX_UPLOAD_SIZE_MB: "25"
+      DEFAULT_PAGE_SIZE: "100"
+      MAX_PAGE_SIZE: "500"
+      UVICORN_WORKERS: "2"
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')\""]
@@ -16,3 +24,6 @@ services:
       timeout: 10s
       retries: 5
       start_period: 20s
+
+volumes:
+  qa_data:

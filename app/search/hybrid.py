@@ -97,7 +97,7 @@ def _hybrid_combine(
         return {
             "found": False,
             "message": "No matching answer found.",
-            "method": "hybrid"
+            "method": "hybrid",
         }
 
     # Collate results from best scoring IDs
@@ -113,9 +113,7 @@ def _hybrid_combine(
 
     # Sort by hybrid score
     sorted_results = sorted(
-        combined_results.values(),
-        key=lambda x: x["hybrid_score"],
-        reverse=True
+        combined_results.values(), key=lambda x: x["hybrid_score"], reverse=True
     )
 
     for r in sorted_results:
@@ -130,7 +128,7 @@ def _hybrid_combine(
             "keyword": round(keyword_weight, 3),
             "fuzzy": round(fuzzy_weight, 3),
             "semantic": round(semantic_weight, 3),
-        }
+        },
     }
 
 

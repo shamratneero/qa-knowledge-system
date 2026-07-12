@@ -71,7 +71,10 @@ def search_fuzzy(query: str, top_n: int = 5, threshold: int = 80) -> Dict[str, A
 
     if _KB_DF is None:
         logger.error("fuzzy_search kb_not_loaded query=%r", query)
-        return {"found": False, "message": f"Knowledge base not loaded: {_KB_LOAD_ERROR}"}
+        return {
+            "found": False,
+            "message": f"Knowledge base not loaded: {_KB_LOAD_ERROR}",
+        }
 
     query_norm = _normalize(query)
     if not query_norm:

@@ -20,11 +20,19 @@ jobs:
           cache: pip
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          pip install -r requirements.txt
+          pip install black ruff
+
+      - name: Check formatting
+        run: black --check app tests
+
+      - name: Lint
+        run: ruff check app tests
 
       - name: Run fast tests
         run: pytest -m "not slow" -v
 
-      - name: Run integration tests (main/master pushes)
+      - name: Run full suite on main/master pushes
         if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
-        run: pytest -m slow -v
+        run: pytest -v

@@ -2,8 +2,9 @@ from pathlib import Path
 
 import pandas as pd
 
-
-DATA_FILE = Path(__file__).resolve().parent.parent.parent / "data" / "knowledge_base.xlsx"
+DATA_FILE = (
+    Path(__file__).resolve().parent.parent.parent / "data" / "knowledge_base.xlsx"
+)
 
 
 REQUIRED_COLUMNS = [
@@ -33,9 +34,7 @@ def load_knowledge_base(file_path=None):
     missing = [col for col in REQUIRED_COLUMNS if col not in df.columns]
 
     if missing:
-        raise ValueError(
-            f"Missing required columns: {missing}"
-        )
+        raise ValueError(f"Missing required columns: {missing}")
 
     if df.empty:
         raise ValueError("Knowledge base is empty.")

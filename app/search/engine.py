@@ -60,7 +60,10 @@ def search(query: str, top_n: int = 5) -> Dict[str, Any]:
 
     if _KB_DF is None:
         logger.error("keyword_search kb_not_loaded query=%r", query)
-        return {"found": False, "message": f"Knowledge base not loaded: {_KB_LOAD_ERROR}"}
+        return {
+            "found": False,
+            "message": f"Knowledge base not loaded: {_KB_LOAD_ERROR}",
+        }
 
     query_norm = _normalize(query)
     if not query_norm:
@@ -108,7 +111,12 @@ def search(query: str, top_n: int = 5) -> Dict[str, Any]:
         elapsed_ms,
     )
 
-    return {"found": True, "query": query, "results": scored[:top_n], "method": "keyword"}
+    return {
+        "found": True,
+        "query": query,
+        "results": scored[:top_n],
+        "method": "keyword",
+    }
 
 
 __all__ = ["search"]

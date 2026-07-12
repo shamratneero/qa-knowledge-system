@@ -6,13 +6,17 @@
     <title>Q&A Knowledge System</title>
     <style>
       :root {
-        --bg: #f4f7fb;
+        --bg: #f2f6fb;
         --card: #ffffff;
-        --text: #132238;
-        --muted: #5c6b7a;
-        --accent: #0f766e;
-        --accent-2: #0ea5e9;
-        --border: #d5e2ee;
+        --sidebar: #0f172a;
+        --sidebar-muted: #cbd5e1;
+        --text: #0f1f33;
+        --muted: #64748b;
+        --accent: #0b7a75;
+        --accent-2: #118ab2;
+        --accent-soft: #e7f7f7;
+        --border: #d8e3ef;
+        --danger: #b42318;
       }
       * { box-sizing: border-box; }
       body {
@@ -27,16 +31,65 @@
       .wrap {
         min-height: 100vh;
         display: grid;
-        place-items: center;
-        padding: 24px;
+        grid-template-columns: 250px 1fr;
+      }
+      .sidebar {
+        background: linear-gradient(180deg, #0b1324 0%, var(--sidebar) 100%);
+        color: white;
+        padding: 22px 16px;
+        position: sticky;
+        top: 0;
+        height: 100vh;
+      }
+      .sidebar h2 {
+        margin: 0 0 6px;
+        font-size: 1rem;
+      }
+      .sidebar p {
+        margin: 0 0 18px;
+        color: var(--sidebar-muted);
+        font-size: 0.86rem;
+      }
+      .nav {
+        display: grid;
+        gap: 8px;
+      }
+      .nav a {
+        color: #e2e8f0;
+        text-decoration: none;
+        font-size: 0.92rem;
+        padding: 8px 10px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.05);
+      }
+      .nav a:hover { background: rgba(255, 255, 255, 0.14); }
+      .content {
+        padding: 20px;
       }
       .card {
-        width: min(920px, 100%);
+        width: 100%;
         background: var(--card);
         border: 1px solid var(--border);
         border-radius: 16px;
-        padding: 22px;
+        padding: 24px;
         box-shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
+      }
+      .hero {
+        display: flex;
+        gap: 12px;
+        justify-content: space-between;
+        flex-wrap: wrap;
+      }
+      .hero .meta { margin-top: 6px; }
+      .pill {
+        border: 1px solid var(--border);
+        background: var(--accent-soft);
+        color: var(--accent);
+        border-radius: 999px;
+        padding: 6px 10px;
+        font-weight: 600;
+        font-size: 0.8rem;
+        height: fit-content;
       }
       h1 {
         margin: 0 0 8px;
@@ -79,6 +132,18 @@
         color: var(--muted);
         font-size: 0.95rem;
       }
+      .loading {
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        border: 2px solid #d9eef2;
+        border-top: 2px solid var(--accent-2);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        vertical-align: middle;
+        margin-right: 6px;
+      }
+      @keyframes spin { from { transform: rotate(0deg);} to { transform: rotate(360deg);} }
       .result {
         margin-top: 12px;
         border: 1px solid var(--border);
@@ -99,6 +164,220 @@
         padding-left: 18px;
       }
       .list li { margin: 6px 0; }
+      .upload {
+        margin-top: 18px;
+        padding-top: 18px;
+        border-top: 1px solid var(--border);
+      }
+      .upload-grid {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: 1fr 140px;
+      }
+      .upload-note {
+        color: var(--muted);
+        font-size: 0.92rem;
+        margin: 8px 0 0;
+      }
+      .upload-progress {
+        margin-top: 10px;
+        width: 100%;
+        height: 10px;
+        border-radius: 999px;
+        background: #e7eef7;
+        overflow: hidden;
+      }
+      .upload-progress > div {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, var(--accent), var(--accent-2));
+        transition: width 0.25s ease;
+      }
+      .preview-summary {
+        margin-top: 12px;
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+      .preview-wrap {
+        margin-top: 12px;
+        overflow: auto;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+      }
+      .analytics {
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid var(--border);
+      }
+      .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+      }
+      .kpi {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 10px;
+        background: #fcfeff;
+      }
+      .kpi .label {
+        color: var(--muted);
+        font-size: 0.83rem;
+      }
+      .kpi .value {
+        margin-top: 4px;
+        font-size: 1.2rem;
+        font-weight: 700;
+      }
+      .analytics-filters {
+        display: grid;
+        grid-template-columns: 1fr 160px 140px 120px 120px 100px;
+        gap: 10px;
+        margin-top: 12px;
+      }
+      .analytics-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+        flex-wrap: wrap;
+      }
+      .badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        font-weight: 600;
+      }
+      .badge.duplicate { background: #fde2e1; color: #a41f1b; }
+      .badge.similar { background: #fff2d8; color: #8a5b00; }
+      .badge.unique { background: #dcfce7; color: #166534; }
+      .clickable-row {
+        cursor: pointer;
+      }
+      .details-panel {
+        margin-top: 12px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px;
+        background: #fcfeff;
+        white-space: pre-wrap;
+      }
+      .insights-grid {
+        display: grid;
+        gap: 10px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        margin-top: 12px;
+      }
+      .insights-panel {
+        margin-top: 12px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px;
+        background: #fcfeff;
+      }
+      .charts-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 12px;
+      }
+      .chart-card {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px;
+        background: #fff;
+      }
+      .chart-card h4 {
+        margin: 0 0 10px;
+        color: var(--text);
+        font-size: 0.95rem;
+      }
+      .chart-card canvas {
+        width: 100% !important;
+        height: 260px !important;
+      }
+      .empty-state {
+        text-align: center;
+        border: 1px dashed var(--border);
+        border-radius: 12px;
+        padding: 18px;
+        color: var(--muted);
+      }
+      .empty-state .art {
+        font-size: 1.5rem;
+        margin-bottom: 6px;
+      }
+      .banner {
+        display: none;
+        margin: 0 0 12px;
+        border-radius: 10px;
+        border: 1px solid #fecaca;
+        background: #fef2f2;
+        color: var(--danger);
+        padding: 10px;
+      }
+      .banner.show { display: block; }
+      .toast-wrap {
+        position: fixed;
+        right: 16px;
+        bottom: 16px;
+        display: grid;
+        gap: 8px;
+        z-index: 999;
+      }
+      .toast {
+        background: #0f172a;
+        color: #fff;
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-size: 0.88rem;
+        min-width: 220px;
+        box-shadow: 0 8px 22px rgba(2, 6, 23, 0.3);
+      }
+      .insights-panel h3 {
+        margin: 0 0 10px;
+        font-size: 1rem;
+      }
+      .insights-list {
+        margin: 0;
+        padding-left: 18px;
+      }
+      .insights-list li {
+        margin: 6px 0;
+        font-size: 0.93rem;
+      }
+      .knowledge-search {
+        display: grid;
+        grid-template-columns: 1fr 150px 130px;
+        gap: 10px;
+        margin-top: 12px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 760px;
+      }
+      th, td {
+        padding: 10px;
+        border-bottom: 1px solid var(--border);
+        text-align: left;
+        vertical-align: top;
+        font-size: 0.93rem;
+      }
+      th {
+        background: #f8fbff;
+        position: sticky;
+        top: 0;
+      }
+      .conversation-box {
+        margin-top: 12px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px;
+        background: #fcfeff;
+        white-space: pre-wrap;
+        line-height: 1.5;
+      }
       .error {
         color: #b42318;
         background: #fff1f1;
@@ -107,17 +386,48 @@
         padding: 10px;
       }
       @media (max-width: 760px) {
+        .wrap { grid-template-columns: 1fr; }
+        .sidebar {
+          height: auto;
+          position: relative;
+        }
+        .content { padding: 12px; }
         .controls { grid-template-columns: 1fr; }
+        .upload-grid { grid-template-columns: 1fr; }
+        .kpi-grid { grid-template-columns: 1fr 1fr; }
+        .analytics-filters { grid-template-columns: 1fr; }
+        .insights-grid { grid-template-columns: 1fr; }
+        .knowledge-search { grid-template-columns: 1fr; }
+        .charts-grid { grid-template-columns: 1fr; }
       }
     </style>
   </head>
   <body>
     <div class="wrap">
+      <aside class="sidebar">
+        <h2>Conversation Intelligence</h2>
+        <p>Production dashboard</p>
+        <nav class="nav">
+          <a href="#section-search">Search</a>
+          <a href="#section-upload">Upload</a>
+          <a href="#section-analytics">Analytics</a>
+          <a href="#section-insights">Insights</a>
+          <a href="#section-knowledge">Knowledge</a>
+          <a href="#section-ai">Ask AI</a>
+        </nav>
+      </aside>
+      <div class="content">
       <main class="card">
-        <h1>Ask the Knowledge Base</h1>
-        <p class="sub">Search via keyword, fuzzy, semantic, or hybrid ranking.</p>
+        <div id="errorBanner" class="banner"></div>
+        <div class="hero">
+          <div>
+            <h1>Ask the Knowledge Base</h1>
+            <p class="sub">Modern SaaS analytics workspace for conversation intelligence.</p>
+          </div>
+          <div class="pill">Live Analytics</div>
+        </div>
 
-        <div class="row">
+        <div class="row" id="section-search">
           <div class="controls">
             <input id="q" type="text" placeholder="Type your question..." />
             <select id="method">
@@ -132,8 +442,95 @@
         </div>
 
         <section id="output"></section>
+
+        <section class="upload" id="section-upload">
+          <h2 style="margin:0 0 8px; font-size:1.2rem;">Upload Conversation Excel</h2>
+          <p class="upload-note">Upload a workbook with <strong>Tickets</strong> and <strong>Conversations</strong> sheets. The app will group messages by Ticket ID and preview reconstructed conversations.</p>
+          <div class="upload-grid" style="margin-top: 12px;">
+            <input id="excelFile" type="file" accept=".xlsx,.xls" />
+            <button id="uploadBtn">Preview</button>
+          </div>
+          <div id="uploadStatus" class="status"></div>
+          <div class="upload-progress"><div id="uploadProgressBar"></div></div>
+          <div id="uploadSummary" class="preview-summary"></div>
+          <div id="previewTable"></div>
+          <div id="previewConversation"></div>
+        </section>
+
+        <section class="analytics" id="section-analytics">
+          <h2 style="margin:0 0 8px; font-size:1.2rem;">Conversation Analytics Dashboard</h2>
+          <p class="upload-note">KPI cards and filtered table from persisted conversation analytics.</p>
+
+          <div class="kpi-grid" id="kpiGrid"></div>
+
+          <div class="analytics-filters">
+            <input id="analyticsSearch" type="text" placeholder="Search ticket / subject / conversation / cluster" />
+            <select id="analyticsStatus">
+              <option value="">all status</option>
+              <option value="duplicate">duplicate</option>
+              <option value="similar">similar</option>
+              <option value="unique">unique</option>
+            </select>
+            <input id="analyticsCluster" type="number" min="0" placeholder="cluster id" />
+            <input id="analyticsMinSim" type="number" min="0" max="1" step="0.01" placeholder="min sim" />
+            <input id="analyticsMaxSim" type="number" min="0" max="1" step="0.01" placeholder="max sim" />
+            <button id="analyticsBtn">Load</button>
+          </div>
+
+          <div class="analytics-actions">
+            <button id="exportCsvBtn">Export CSV</button>
+            <button id="exportExcelBtn">Export Excel</button>
+          </div>
+
+          <div id="analyticsStatusText" class="status"></div>
+          <div class="charts-grid">
+            <div class="chart-card"><h4>Conversation Status</h4><canvas id="statusPieChart"></canvas></div>
+            <div class="chart-card"><h4>Cluster Distribution</h4><canvas id="clusterBarChart"></canvas></div>
+            <div class="chart-card"><h4>Daily Volume</h4><canvas id="dailyLineChart"></canvas></div>
+            <div class="chart-card"><h4>Top Recurring Issues</h4><canvas id="recurringChart"></canvas></div>
+          </div>
+          <div id="analyticsTable"></div>
+          <div id="analyticsDetails"></div>
+
+          <section class="insights-panel" id="section-insights">
+            <h3>Business Insights</h3>
+            <div id="insightsSummaryCards" class="insights-grid"></div>
+            <div id="insightsAutomation" class="insights-panel"></div>
+            <div id="insightsRecurring" class="insights-panel"></div>
+            <div id="insightsEmerging" class="insights-panel"></div>
+            <div id="insightsRecommendations" class="insights-panel"></div>
+          </section>
+
+          <section class="insights-panel" id="section-knowledge">
+            <h3>Knowledge Base & Continuous Learning</h3>
+            <div id="knowledgeCards" class="insights-grid"></div>
+            <div class="chart-card"><h4>Historical Knowledge Growth</h4><canvas id="knowledgeGrowthChart"></canvas></div>
+            <div id="knowledgeGrowth" class="insights-panel"></div>
+            <div class="knowledge-search">
+              <input id="knowledgeQuery" type="text" placeholder="Search knowledge base: ticket, issue text, keywords" />
+              <input id="knowledgeLimit" type="number" min="1" max="50" value="10" />
+              <button id="knowledgeSearchBtn">Search KB</button>
+            </div>
+            <div id="knowledgeSearchResults" class="insights-panel"></div>
+          </section>
+
+          <section class="insights-panel" id="section-ai">
+            <h3>Ask AI Analyst</h3>
+            <p class="upload-note">Ask natural language questions about complaints, duplicates, similar issues, clusters, and historical patterns.</p>
+            <div class="knowledge-search">
+              <input id="aiQuestion" type="text" placeholder="What are customers complaining about most?" />
+              <input id="aiTopK" type="number" min="1" max="20" value="10" />
+              <button id="aiAskBtn">Ask AI</button>
+            </div>
+            <div id="aiAnswer" class="insights-panel"></div>
+            <div id="aiMatches" class="insights-panel"></div>
+          </section>
+        </section>
       </main>
+      </div>
     </div>
+    <div id="toastWrap" class="toast-wrap"></div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 
     <script>
       const qEl = document.getElementById("q");
@@ -141,65 +538,320 @@
       const askBtn = document.getElementById("askBtn");
       const output = document.getElementById("output");
       const statusEl = document.getElementById("status");
+      const excelFileEl = document.getElementById("excelFile");
+      const uploadBtn = document.getElementById("uploadBtn");
+      const uploadStatusEl = document.getElementById("uploadStatus");
+      const uploadProgressBarEl = document.getElementById("uploadProgressBar");
+      const uploadSummaryEl = document.getElementById("uploadSummary");
+      const previewTableEl = document.getElementById("previewTable");
+      const previewConversationEl = document.getElementById("previewConversation");
+      const kpiGridEl = document.getElementById("kpiGrid");
+      const analyticsSearchEl = document.getElementById("analyticsSearch");
+      const analyticsStatusEl = document.getElementById("analyticsStatus");
+      const analyticsClusterEl = document.getElementById("analyticsCluster");
+      const analyticsMinSimEl = document.getElementById("analyticsMinSim");
+      const analyticsMaxSimEl = document.getElementById("analyticsMaxSim");
+      const analyticsBtn = document.getElementById("analyticsBtn");
+      const analyticsStatusTextEl = document.getElementById("analyticsStatusText");
+      const analyticsTableEl = document.getElementById("analyticsTable");
+      const analyticsDetailsEl = document.getElementById("analyticsDetails");
+      const exportCsvBtn = document.getElementById("exportCsvBtn");
+      const exportExcelBtn = document.getElementById("exportExcelBtn");
+      const insightsSummaryCardsEl = document.getElementById("insightsSummaryCards");
+      const insightsAutomationEl = document.getElementById("insightsAutomation");
+      const insightsRecurringEl = document.getElementById("insightsRecurring");
+      const insightsEmergingEl = document.getElementById("insightsEmerging");
+      const insightsRecommendationsEl = document.getElementById("insightsRecommendations");
+      const knowledgeCardsEl = document.getElementById("knowledgeCards");
+      const knowledgeGrowthEl = document.getElementById("knowledgeGrowth");
+      const knowledgeQueryEl = document.getElementById("knowledgeQuery");
+      const knowledgeLimitEl = document.getElementById("knowledgeLimit");
+      const knowledgeSearchBtn = document.getElementById("knowledgeSearchBtn");
+      const knowledgeSearchResultsEl = document.getElementById("knowledgeSearchResults");
+      const aiQuestionEl = document.getElementById("aiQuestion");
+      const aiTopKEl = document.getElementById("aiTopK");
+      const aiAskBtn = document.getElementById("aiAskBtn");
+      const aiAnswerEl = document.getElementById("aiAnswer");
+      const aiMatchesEl = document.getElementById("aiMatches");
+      const errorBannerEl = document.getElementById("errorBanner");
+      const toastWrapEl = document.getElementById("toastWrap");
 
-      function setStatus(text) {
-        statusEl.textContent = text || "";
+      let charts = {
+        status: null,
+        cluster: null,
+        daily: null,
+        recurring: null,
+        knowledge: null,
+      };
+
+      function setStatus(text) { statusEl.textContent = text || ""; }
+      function showErrorBanner(message) {
+        if (!message) {
+          errorBannerEl.classList.remove("show");
+          errorBannerEl.textContent = "";
+          return;
+        }
+        errorBannerEl.textContent = message;
+        errorBannerEl.classList.add("show");
       }
+      function showToast(message) {
+        const toast = document.createElement("div");
+        toast.className = "toast";
+        toast.textContent = message;
+        toastWrapEl.appendChild(toast);
+        setTimeout(() => toast.remove(), 2600);
+      }
+      function setUploadProgress(v) {
+        uploadProgressBarEl.style.width = `${Math.max(0, Math.min(100, v))}%`;
+      }
+      function loadingText(message) { return `<span class="loading"></span>${message}`; }
 
       function renderError(message) {
         output.innerHTML = `<div class="error">${message}</div>`;
+        showErrorBanner(message);
       }
 
       function renderResult(data) {
         const top = data.results?.[0];
-        if (!top) {
-          renderError("No result payload returned.");
+        if (!top) return renderError("No result payload returned.");
+        const list = (data.results || []).slice(0, 5).map(
+          (r) => `<li><strong>${r.question}</strong> <span class="meta">(confidence: ${Number(r.confidence || 0).toFixed(3)})</span></li>`
+        ).join("");
+        output.innerHTML = `<div class="result"><p class="answer"><strong>Answer:</strong> ${top.answer}</p><p class="meta">Method: ${data.method} | Score: ${Number(data.score || 0).toFixed(3)}</p><ul class="list">${list}</ul></div>`;
+      }
+
+      function renderUploadPreview(data) {
+        const report = data.report || {};
+        uploadSummaryEl.textContent = `File: ${report.file_name || "-"} | Source rows: ${report.total_source_rows ?? 0} | Valid conversations: ${report.valid_conversations ?? 0} | Unique Ticket IDs: ${report.unique_ticket_ids ?? 0} | Invalid rows: ${report.invalid_rows ?? 0}`;
+        const rows = (data.preview_rows || []).map((row, index) => `<tr><td>${index + 1}</td><td>${row.ticket_id || "-"}</td><td>${row.subject || "-"}</td><td>${row.message_count ?? 0}</td><td>${row.first_sent_at || "-"}</td><td>${row.last_sent_at || "-"}</td></tr>`).join("");
+        previewTableEl.innerHTML = `<div class="preview-wrap"><table><thead><tr><th>#</th><th>Ticket ID</th><th>Subject</th><th>Messages</th><th>First Sent</th><th>Last Sent</th></tr></thead><tbody>${rows || "<tr><td colspan='6'>No preview rows returned.</td></tr>"}</tbody></table></div>`;
+        const first = data.preview_rows?.[0];
+        previewConversationEl.innerHTML = first ? `<div class="conversation-box"><strong>Representative Conversation</strong><div style="margin-top:8px; color: var(--muted);">Ticket ID: ${first.ticket_id || "-"}</div><div style="margin-top:10px;">${first.conversation_text || ""}</div></div>` : "";
+      }
+
+      function renderKpis(data) {
+        const kpis = [["Total Tickets", data.total_tickets], ["Total Conversations", data.total_conversations], ["Duplicate", data.duplicate_conversations], ["Similar", data.similar_conversations], ["Unique", data.unique_conversations], ["Clusters", data.total_clusters]];
+        kpiGridEl.innerHTML = kpis.map(([label, value]) => `<div class="kpi"><div class="label">${label}</div><div class="value">${value ?? 0}</div></div>`).join("");
+      }
+
+      function renderAnalyticsTable(data) {
+        const rows = (data.items || []).map((row) => `<tr class="clickable-row" data-id="${row.id}"><td>${row.ticket_id}</td><td>${row.subject || "-"}</td><td><span class="badge ${row.status}">${row.status}</span></td><td>${Number(row.similarity_score || 0).toFixed(3)}</td><td><strong>${row.cluster_label || "Unlabeled"}</strong><br><span class="meta">ID ${row.cluster_id}</span></td><td>${row.nearest_ticket_id || "-"}</td><td>${(row.representative_conversation || "").slice(0, 140)}</td></tr>`).join("");
+        analyticsTableEl.innerHTML = `<div class="preview-wrap"><table><thead><tr><th>Ticket ID</th><th>Subject</th><th>Status</th><th>Similarity</th><th>Cluster</th><th>Nearest</th><th>Representative Conversation</th></tr></thead><tbody>${rows || "<tr><td colspan='7'>No data found.</td></tr>"}</tbody></table></div>`;
+        analyticsStatusTextEl.textContent = `Loaded ${data.items?.length || 0} of ${data.total || 0} rows.`;
+        Array.from(analyticsTableEl.querySelectorAll("tr.clickable-row")).forEach((tr) => tr.addEventListener("click", () => loadConversationDetail(tr.getAttribute("data-id"))));
+      }
+
+      function renderInsights(data) {
+        const summary = data.summary || {};
+        const summaryCards = [["Redundancy", `${Number(summary.redundancy_percentage || 0).toFixed(1)}%`], ["Avg Similarity", Number(summary.average_similarity_score || 0).toFixed(3)], ["Median Similarity", Number(summary.median_similarity_score || 0).toFixed(3)], ["Avg Messages/Ticket", Number(summary.average_messages_per_ticket || 0).toFixed(2)], ["Largest Cluster", `${summary.largest_cluster?.cluster_label || "-"} (${summary.largest_cluster?.conversation_count || 0})`], ["Smallest Cluster", `${summary.smallest_cluster?.cluster_label || "-"} (${summary.smallest_cluster?.conversation_count || 0})`]];
+        insightsSummaryCardsEl.innerHTML = summaryCards.map(([label, value]) => `<div class="kpi"><div class="label">${label}</div><div class="value">${value}</div></div>`).join("");
+        insightsAutomationEl.innerHTML = `<h3>Automation Opportunities</h3><ul class="insights-list">${(data.automation_opportunities || []).map((item) => `<li><strong>${item.cluster_label}</strong> (ID ${item.cluster_id}) - ${item.conversation_count} conversations, ${Number(item.duplicate_rate || 0).toFixed(1)}% duplicate, estimated automation ${Number(item.estimated_automation_opportunity || 0).toFixed(1)}%.</li>`).join("") || "<li>No automation opportunities detected.</li>"}</ul>`;
+        insightsRecurringEl.innerHTML = `<h3>Top Recurring Issues</h3><ul class="insights-list">${(data.recurring_issues || []).map((item) => `<li><strong>${item.cluster_label}</strong> (ID ${item.cluster_id}) - ${item.conversation_count} conversations (${Number(item.percentage_of_total || 0).toFixed(1)}%), representative ticket ${item.representative_ticket || "-"}.</li>`).join("") || "<li>No recurring issues available.</li>"}</ul>`;
+        insightsEmergingEl.innerHTML = `<h3>Emerging Issues</h3><ul class="insights-list">${(data.emerging_issues || []).map((item) => item.reason === "rapid_cluster_growth" ? `<li><strong>${item.cluster_label}</strong> (ID ${item.cluster_id}) is growing rapidly: recent ${item.recent_count || 0} vs previous ${item.previous_count || 0} (${Number(item.growth_ratio || 0).toFixed(2)}x).</li>` : `<li><strong>${item.cluster_label}</strong> (ID ${item.cluster_id}) is mostly unique (${Number(item.unique_rate || 0).toFixed(1)}%), which may indicate an emerging issue.</li>`).join("") || "<li>No emerging issues detected.</li>"}</ul>`;
+        insightsRecommendationsEl.innerHTML = `<h3>Recommendations</h3><ul class="insights-list">${(data.recommendations || []).map((item) => `<li>${item}</li>`).join("") || "<li>No recommendations available.</li>"}</ul>`;
+      }
+
+      function renderOrUpdateChart(current, id, type, data) {
+        const node = document.getElementById(id);
+        if (!node) return current;
+        if (current) current.destroy();
+        return new Chart(node, { type, data, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom" } }, scales: type === "pie" ? {} : { y: { beginAtZero: true } } } });
+      }
+
+      function renderCharts(data) {
+        const status = data.status_distribution || [];
+        charts.status = renderOrUpdateChart(charts.status, "statusPieChart", "pie", { labels: status.map((x) => x.status), datasets: [{ data: status.map((x) => Number(x.count || 0)), backgroundColor: ["#ef4444", "#f59e0b", "#22c55e", "#3b82f6"] }] });
+        const clusters = data.cluster_distribution || [];
+        charts.cluster = renderOrUpdateChart(charts.cluster, "clusterBarChart", "bar", { labels: clusters.map((x) => `${x.cluster_label} (#${x.cluster_id})`), datasets: [{ label: "Conversations", data: clusters.map((x) => Number(x.count || 0)), backgroundColor: "#118ab2" }] });
+        const daily = data.daily_volume || [];
+        charts.daily = renderOrUpdateChart(charts.daily, "dailyLineChart", "line", { labels: daily.map((x) => x.date), datasets: [{ label: "Daily Conversations", data: daily.map((x) => Number(x.count || 0)), borderColor: "#0b7a75", backgroundColor: "rgba(17,138,178,0.15)", fill: true, tension: 0.25 }] });
+        const recurring = data.top_recurring_issues || [];
+        charts.recurring = renderOrUpdateChart(charts.recurring, "recurringChart", "bar", { labels: recurring.map((x) => x.cluster_label), datasets: [{ label: "Count", data: recurring.map((x) => Number(x.count || 0)), backgroundColor: "#0ea5e9" }] });
+      }
+
+      function renderKnowledgeDashboard(data) {
+        const cards = [["Total Uploads", data.total_uploads], ["Knowledge Base Size", data.knowledge_base_size], ["Known Conversations", data.known_conversations], ["New Conversations", data.new_conversations], ["New Intents", data.new_intents_discovered]];
+        knowledgeCardsEl.innerHTML = cards.map(([label, value]) => `<div class="kpi"><div class="label">${label}</div><div class="value">${value ?? 0}</div></div>`).join("");
+        const growth = data.historical_growth || [];
+        knowledgeGrowthEl.innerHTML = `<h3>Historical Growth</h3><ul class="insights-list">${growth.map((row) => `<li>${row.date}: +${row.new_records} (cumulative ${row.cumulative_records})</li>`).join("") || "<li>No growth data yet.</li>"}</ul>`;
+        charts.knowledge = renderOrUpdateChart(charts.knowledge, "knowledgeGrowthChart", "line", { labels: growth.map((x) => x.date), datasets: [{ label: "Knowledge Size", data: growth.map((x) => Number(x.cumulative_records || 0)), borderColor: "#0b7a75", backgroundColor: "rgba(11,122,117,0.12)", fill: true, tension: 0.25 }] });
+      }
+
+      function renderKnowledgeSearch(data) {
+        const rows = (data.items || []).map((item) => `<li><strong>${item.ticket_id}</strong> | ${item.cluster_label} (ID ${item.cluster_id}) | ${item.classification} | batch ${item.upload_batch}${item.semantic_similarity !== null && item.semantic_similarity !== undefined ? ` | semantic ${Number(item.semantic_similarity).toFixed(3)}` : ""}</li>`).join("");
+        knowledgeSearchResultsEl.innerHTML = `<h3>Knowledge Search Results</h3><ul class="insights-list">${rows || "<li>No matching knowledge records.</li>"}</ul>`;
+      }
+
+      async function loadKnowledgeDashboard() {
+        const res = await fetch("/knowledge/dashboard");
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Failed loading knowledge dashboard");
+        renderKnowledgeDashboard(data);
+      }
+
+      async function searchKnowledgeBase() {
+        const params = new URLSearchParams();
+        const q = (knowledgeQueryEl.value || "").trim();
+        if (q) params.set("query", q);
+        params.set("limit", String(Math.max(1, Math.min(50, Number(knowledgeLimitEl.value || 10)))));
+        const res = await fetch(`/knowledge/search?${params.toString()}`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Knowledge search failed");
+        renderKnowledgeSearch(data);
+      }
+
+      function renderAIResult(data) {
+        const sourceRows = (data.sources || []).map((s) => `<li>${s.conversation_id} | ticket ${s.ticket_id} | ${s.cluster_label} (ID ${s.cluster_id}) | batch ${s.upload_batch}${s.semantic_similarity !== null && s.semantic_similarity !== undefined ? ` | sim ${Number(s.semantic_similarity).toFixed(3)}` : ""}</li>`).join("");
+        aiAnswerEl.innerHTML = `<h3>AI Answer (${data.generation_mode || "deterministic"})</h3><div>${data.answer || "No answer available."}</div><div class="meta" style="margin-top:8px;">Confidence: ${Number(data.confidence_score || 0).toFixed(3)}</div><ul class="insights-list">${sourceRows || "<li>No sources found.</li>"}</ul>`;
+        const clustersList = (data.matching_clusters || []).map((c) => `<li>${c.cluster_label} (ID ${c.cluster_id}) - ${c.conversation_count} matches</li>`).join("");
+        const convosList = (data.matching_conversations || []).slice(0, 10).map((x) => `<li>${x.conversation_id} | ${x.ticket_id} | ${x.cluster_label} | ${x.classification}${x.semantic_similarity !== null && x.semantic_similarity !== undefined ? ` | semantic ${Number(x.semantic_similarity).toFixed(3)}` : ""}</li>`).join("");
+        aiMatchesEl.innerHTML = `<h3>Retrieved Context</h3><strong>Matching Clusters</strong><ul class="insights-list">${clustersList || "<li>No clusters matched.</li>"}</ul><strong>Matching Conversations</strong><ul class="insights-list">${convosList || "<li>No conversations matched.</li>"}</ul>`;
+      }
+
+      async function askAIAnalyst() {
+        const question = (aiQuestionEl.value || "").trim();
+        if (!question) {
+          aiAnswerEl.innerHTML = `<div class="error">Please enter a question for Ask AI.</div>`;
           return;
         }
+        const topK = Math.max(1, Math.min(20, Number(aiTopKEl.value || 10)));
+        aiAskBtn.disabled = true;
+        aiAnswerEl.innerHTML = loadingText("Loading AI analysis...");
+        aiMatchesEl.innerHTML = "";
+        try {
+          const res = await fetch("/ai/query", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question, top_k: topK }) });
+          const data = await res.json();
+          if (!res.ok) {
+            aiAnswerEl.innerHTML = `<div class="error">${data.detail || "AI query failed."}</div>`;
+            return;
+          }
+          renderAIResult(data);
+          showToast("AI analysis generated.");
+        } catch (err) {
+          aiAnswerEl.innerHTML = `<div class="error">AI query failed. Ensure the API is running.</div>`;
+          showErrorBanner("AI query failed. Please try again.");
+        } finally {
+          aiAskBtn.disabled = false;
+        }
+      }
 
-        const list = (data.results || [])
-          .slice(0, 5)
-          .map(
-            (r) => `<li><strong>${r.question}</strong> <span class="meta">(confidence: ${Number(r.confidence || 0).toFixed(3)})</span></li>`
-          )
-          .join("");
+      function buildAnalyticsQueryString() {
+        const params = new URLSearchParams();
+        if (analyticsSearchEl.value.trim()) params.set("search", analyticsSearchEl.value.trim());
+        if (analyticsStatusEl.value) params.set("status", analyticsStatusEl.value);
+        if (analyticsClusterEl.value.trim()) params.set("cluster_id", analyticsClusterEl.value.trim());
+        if (analyticsMinSimEl.value.trim()) params.set("min_similarity", analyticsMinSimEl.value.trim());
+        if (analyticsMaxSimEl.value.trim()) params.set("max_similarity", analyticsMaxSimEl.value.trim());
+        return params.toString();
+      }
 
-        output.innerHTML = `
-          <div class="result">
-            <p class="answer"><strong>Answer:</strong> ${top.answer}</p>
-            <p class="meta">Method: ${data.method} | Score: ${Number(data.score || 0).toFixed(3)}</p>
-            <ul class="list">${list}</ul>
-          </div>
-        `;
+      async function loadConversationDetail(id) {
+        if (!id) return;
+        analyticsDetailsEl.innerHTML = "";
+        try {
+          const res = await fetch(`/analytics/conversations/${id}`);
+          const data = await res.json();
+          if (!res.ok) {
+            analyticsDetailsEl.innerHTML = `<div class="error">${data.detail || "Failed to load conversation details."}</div>`;
+            return;
+          }
+          const nearest = data.nearest_conversation;
+          analyticsDetailsEl.innerHTML = `<div class="details-panel"><strong>Conversation Detail</strong><div style="margin-top:8px; color: var(--muted);">Ticket ${data.ticket_id} | Status: ${data.status} | Cluster: ${data.cluster_label || "Unlabeled"} (ID ${data.cluster_id})</div><div style="margin-top:10px;"><strong>Full Conversation</strong></div><div style="margin-top:6px;">${data.conversation_text || ""}</div>${nearest ? `<div style="margin-top:12px;"><strong>Nearest Conversation</strong></div><div style="margin-top:6px; color: var(--muted);">Ticket ${nearest.ticket_id} | Status: ${nearest.status} | Cluster: ${nearest.cluster_label || "Unlabeled"} (ID ${nearest.cluster_id}) | Similarity: ${Number(nearest.similarity_score || 0).toFixed(3)}</div><div style="margin-top:6px;">${nearest.conversation_text || ""}</div>` : `<div style="margin-top:12px; color: var(--muted);">No nearest conversation found.</div>`}</div>`;
+        } catch (err) {
+          analyticsDetailsEl.innerHTML = `<div class="error">Failed to load conversation details.</div>`;
+        }
+      }
+
+      function exportAnalytics(format) {
+        const qs = buildAnalyticsQueryString();
+        window.location.href = format === "excel" ? `/analytics/export/excel?${qs}` : `/analytics/export/csv?${qs}`;
+      }
+
+      async function loadAnalytics() {
+        analyticsBtn.disabled = true;
+        analyticsStatusTextEl.innerHTML = loadingText("Loading analytics...");
+        showErrorBanner("");
+        const params = new URLSearchParams(buildAnalyticsQueryString());
+        params.set("limit", "100");
+        try {
+          const [overviewRes, tableRes, insightsRes, chartsRes] = await Promise.all([
+            fetch("/analytics/overview"),
+            fetch(`/analytics/conversations?${params.toString()}`),
+            fetch("/analytics/insights"),
+            fetch("/analytics/charts"),
+          ]);
+          const overview = await overviewRes.json();
+          const table = await tableRes.json();
+          const insights = await insightsRes.json();
+          const chartData = await chartsRes.json();
+          if (!overviewRes.ok) throw new Error(overview.detail || "Failed loading overview");
+          if (!tableRes.ok) throw new Error(table.detail || "Failed loading table");
+          if (!insightsRes.ok) throw new Error(insights.detail || "Failed loading insights");
+          if (!chartsRes.ok) throw new Error(chartData.detail || "Failed loading charts");
+          renderKpis(overview);
+          renderAnalyticsTable(table);
+          renderInsights(insights);
+          renderCharts(chartData);
+          await loadKnowledgeDashboard();
+        } catch (err) {
+          const message = err.message || "Failed to load analytics.";
+          analyticsStatusTextEl.innerHTML = `<div class="error">${message}</div>`;
+          analyticsTableEl.innerHTML = "";
+          showErrorBanner(message);
+        } finally {
+          analyticsBtn.disabled = false;
+        }
+      }
+
+      async function uploadExcel() {
+        const file = excelFileEl.files && excelFileEl.files[0];
+        if (!file) {
+          uploadStatusEl.innerHTML = `<div class="error">Please choose an Excel file first.</div>`;
+          return;
+        }
+        uploadBtn.disabled = true;
+        uploadStatusEl.innerHTML = loadingText("Uploading and reconstructing conversations...");
+        uploadSummaryEl.textContent = "";
+        previewTableEl.innerHTML = "";
+        previewConversationEl.innerHTML = "";
+        setUploadProgress(8);
+        try {
+          const formData = new FormData();
+          formData.append("file", file);
+          setUploadProgress(25);
+          const res = await fetch("/admin/conversations/upload?preview_count=5", { method: "POST", body: formData });
+          setUploadProgress(75);
+          const data = await res.json();
+          if (!res.ok) {
+            uploadStatusEl.innerHTML = `<div class="error">${data.detail || "Upload failed."}</div>`;
+            showErrorBanner(data.detail || "Upload failed.");
+            return;
+          }
+          setUploadProgress(100);
+          uploadStatusEl.textContent = "Upload complete.";
+          renderUploadPreview(data);
+          await loadAnalytics();
+          showToast("Upload complete. Dashboard refreshed.");
+        } catch (err) {
+          uploadStatusEl.innerHTML = `<div class="error">Network error. Ensure the API server is running.</div>`;
+          showErrorBanner("Upload failed. Check network and retry.");
+        } finally {
+          uploadBtn.disabled = false;
+          setTimeout(() => setUploadProgress(0), 900);
+        }
       }
 
       async function ask() {
         const question = qEl.value.trim();
         const method = methodEl.value;
-
-        if (!question) {
-          renderError("Please enter a question.");
-          return;
-        }
-
+        if (!question) return renderError("Please enter a question.");
         askBtn.disabled = true;
         setStatus("Searching...");
         output.innerHTML = "";
-
         try {
-          const res = await fetch("/ask", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ question, method, top_n: 5 }),
-          });
-
+          const res = await fetch("/ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question, method, top_n: 5 }) });
           const data = await res.json();
-
-          if (!res.ok) {
-            renderError(data.detail || "Request failed.");
-            return;
-          }
-
+          if (!res.ok) return renderError(data.detail || "Request failed.");
           renderResult(data);
           setStatus("Done");
         } catch (err) {
@@ -210,9 +862,24 @@
       }
 
       askBtn.addEventListener("click", ask);
-      qEl.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") ask();
+      uploadBtn.addEventListener("click", uploadExcel);
+      analyticsBtn.addEventListener("click", loadAnalytics);
+      exportCsvBtn.addEventListener("click", () => exportAnalytics("csv"));
+      exportExcelBtn.addEventListener("click", () => exportAnalytics("excel"));
+      knowledgeSearchBtn.addEventListener("click", async () => {
+        try {
+          await searchKnowledgeBase();
+          showToast("Knowledge search completed.");
+        } catch (err) {
+          knowledgeSearchResultsEl.innerHTML = `<div class="error">${err.message || "Knowledge search failed."}</div>`;
+          showErrorBanner(err.message || "Knowledge search failed.");
+        }
       });
+      aiAskBtn.addEventListener("click", askAIAnalyst);
+      qEl.addEventListener("keydown", (e) => { if (e.key === "Enter") ask(); });
+      knowledgeSearchResultsEl.innerHTML = `<div class="empty-state"><div class="art">📈</div><div>Search your historical knowledge base to inspect learned patterns.</div></div>`;
+      aiMatchesEl.innerHTML = `<div class="empty-state"><div class="art">🤖</div><div>Ask AI to retrieve relevant conversations with citations.</div></div>`;
+      loadAnalytics();
     </script>
   </body>
 </html>

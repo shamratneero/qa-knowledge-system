@@ -3,10 +3,28 @@
 from __future__ import annotations
 
 import logging
+import json
 import sys
 from typing import Optional
 
 from .config import settings
+
+
+class JsonFormatter(logging.Formatter):
+    """Minimal JSON formatter for structured application logs."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        payload = {
+            "timestamp": self.formatTime(record, "%Y-%m-%dT%H:%M:%S"),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+            "module": record.module,
+            "line": record.lineno,
+        }
+        if record.exc_info:
+            payload["exception"] = self.formatException(record.exc_info)
+        return json.dumps(payload, ensure_ascii=True)
 
 
 def setup_logging(level: Optional[str] = None) -> logging.Logger:
@@ -19,10 +37,21 @@ def setup_logging(level: Optional[str] = None) -> logging.Logger:
         settings.log_file.parent.mkdir(parents=True, exist_ok=True)
         handlers.append(logging.FileHandler(settings.log_file))
 
+    formatter: logging.Formatter
+    if settings.log_json:
+        formatter = JsonFormatter()
+    else:
+        formatter = logging.Formatter(
+            "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
+        )
+
+    for handler in handlers:
+        handler.setFormatter(formatter)
+
     logging.basicConfig(
         level=numeric_level,
-        format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
+        format="%(message)s",
         handlers=handlers,
         force=True,
     )

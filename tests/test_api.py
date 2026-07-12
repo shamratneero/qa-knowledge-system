@@ -112,3 +112,152 @@ class TestAskEndpoint:
         data = response.json()
         assert data["method"] == "hybrid"
         assert data["score"] > 0
+
+
+class TestAnalyticsEndpoints:
+    def test_analytics_overview(self, client):
+        response = client.get("/analytics/overview")
+        assert response.status_code == 200
+        data = response.json()
+        assert "total_tickets" in data
+        assert "total_conversations" in data
+        assert "duplicate_conversations" in data
+        assert "similar_conversations" in data
+        assert "unique_conversations" in data
+        assert "total_clusters" in data
+
+    def test_analytics_conversations(self, client):
+        response = client.get("/analytics/conversations?limit=10")
+        assert response.status_code == 200
+        data = response.json()
+        assert "total" in data
+        assert "items" in data
+        assert isinstance(data["items"], list)
+
+    def test_analytics_charts(self, client):
+        response = client.get("/analytics/charts")
+        assert response.status_code == 200
+        data = response.json()
+        assert "status_distribution" in data
+        assert "cluster_distribution" in data
+        assert "daily_volume" in data
+        assert "top_recurring_issues" in data
+
+    def test_analytics_insights(self, client):
+        response = client.get("/analytics/insights")
+        assert response.status_code == 200
+        data = response.json()
+        assert "summary" in data
+        assert "recurring_issues" in data
+        assert "automation_opportunities" in data
+        assert "emerging_issues" in data
+        assert "recommendations" in data
+
+    def test_analytics_export_csv(self, client):
+        response = client.get("/analytics/export/csv")
+        assert response.status_code == 200
+        assert "text/csv" in response.headers.get("content-type", "")
+
+    def test_analytics_export_excel(self, client):
+        response = client.get("/analytics/export/excel")
+        assert response.status_code == 200
+        assert (
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            in response.headers.get("content-type", "")
+        )
+
+    def test_analytics_conversation_detail_not_found(self, client):
+        response = client.get("/analytics/conversations/999999")
+        assert response.status_code == 404
+
+
+class TestKnowledgeEndpoints:
+    def test_knowledge_dashboard(self, client):
+        response = client.get("/knowledge/dashboard")
+        assert response.status_code == 200
+        data = response.json()
+        assert "total_uploads" in data
+        assert "knowledge_base_size" in data
+        assert "new_conversations" in data
+        assert "known_conversations" in data
+        assert "new_intents_discovered" in data
+        assert "historical_growth" in data
+
+    def test_knowledge_search(self, client):
+        response = client.get("/knowledge/search?limit=5")
+        assert response.status_code == 200
+        data = response.json()
+        assert "total" in data
+        assert "items" in data
+
+    def test_knowledge_similar_not_found(self, client, monkeypatch):
+        monkeypatch.setattr(
+            "app.main.get_similar_historical_conversations",
+            lambda conversation_id, top_n=10: [],
+        )
+        monkeypatch.setattr(
+            "app.main.search_knowledge_base",
+            lambda **kwargs: {"total": 1, "items": [{"conversation_id": "x"}]},
+        )
+
+        response = client.get("/knowledge/similar/missing-conversation")
+        assert response.status_code == 404
+
+
+class TestAIEndpoints:
+    def test_ai_query_success(self, client, monkeypatch):
+        monkeypatch.setattr(
+            "app.main.run_ai_query",
+            lambda question, limit=10: {
+                "answer": "Top issue appears to be refunds. Sources: batch_1:1:T1.",
+                "sources": [
+                    {
+                        "conversation_id": "batch_1:1:T1",
+                        "ticket_id": "T1",
+                        "cluster_id": 3,
+                        "cluster_label": "Refund",
+                        "upload_batch": "batch_1",
+                        "semantic_similarity": 0.91,
+                    }
+                ],
+                "matching_conversations": [
+                    {
+                        "conversation_id": "batch_1:1:T1",
+                        "ticket_id": "T1",
+                        "subject": "Refund issue",
+                        "reconstructed_conversation": "Need refund",
+                        "cluster_id": 3,
+                        "cluster_label": "Refund",
+                        "similarity": 0.8,
+                        "classification": "existing_intent",
+                        "upload_batch": "batch_1",
+                        "upload_timestamp": "2026-07-12T00:00:00",
+                        "semantic_similarity": 0.91,
+                    }
+                ],
+                "matching_clusters": [
+                    {
+                        "cluster_id": 3,
+                        "cluster_label": "Refund",
+                        "conversation_count": 1,
+                    }
+                ],
+                "confidence_score": 0.91,
+                "generation_mode": "deterministic",
+            },
+        )
+
+        response = client.post(
+            "/ai/query", json={"question": "Show refund conversations", "top_k": 5}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert "answer" in data
+        assert "sources" in data
+        assert "matching_conversations" in data
+        assert "matching_clusters" in data
+        assert "confidence_score" in data
+
+    def test_ai_query_validation(self, client):
+        response = client.post("/ai/query", json={"question": "", "top_k": 5})
+        assert response.status_code == 422
