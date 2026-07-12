@@ -170,6 +170,20 @@ class TestAnalyticsEndpoints:
         response = client.get("/analytics/conversations/999999")
         assert response.status_code == 404
 
+    def test_analytics_intents(self, client):
+        response = client.get("/analytics/intents")
+        assert response.status_code == 200
+        data = response.json()
+        assert "items" in data
+        assert isinstance(data["items"], list)
+
+    def test_analytics_conversations_filters_by_intent(self, client):
+        response = client.get("/analytics/conversations?intent=Nonexistent Intent XYZ")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total"] == 0
+        assert data["items"] == []
+
 
 class TestKnowledgeEndpoints:
     def test_knowledge_dashboard(self, client):

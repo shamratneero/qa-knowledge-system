@@ -7,6 +7,8 @@ import pandas as pd
 from app.services import conversation_summary
 from app.services.conversation_summary import (
     build_embedding_text,
+    is_probable_person_name,
+    strip_pii,
     summarize_conversation,
     summarize_conversations,
 )
@@ -149,3 +151,94 @@ def test_llm_failure_falls_back_to_deterministic(monkeypatch):
         "Customer: I forgot my password and cannot login."
     )
     assert result["intent"] == "Password Reset"
+
+
+def test_signature_line_is_filtered_like_a_greeting(monkeypatch):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+    conversation = (
+        "Customer: I forgot my password and cannot login.\n\n"
+        "Customer: Thanks, Jackie"
+    )
+    result = summarize_conversation(conversation)
+
+    assert "jackie" not in result["summary"].lower()
+    assert "jackie" not in result["keywords"]
+    assert result["intent"] == "Password Reset"
+
+
+def test_trailing_signoff_on_an_informative_line_is_stripped(monkeypatch):
+    """A sign-off appended to the end of an otherwise-informative line
+    ("...not working. Regards, Roger") must be stripped even though the rest
+    of the line is real content, not just whole signature-only lines."""
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+    conversation = "Customer: I cannot login, my password is not working. Regards, Roger"
+    result = summarize_conversation(conversation)
+
+    assert "roger" not in result["summary"].lower()
+    assert "roger" not in result["keywords"]
+    assert "password" in result["summary"].lower()
+    assert result["intent"] == "Password Reset"
+
+
+def test_pii_never_leaks_into_summary_or_keywords(monkeypatch):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+    conversation = (
+        "Customer: I forgot my password. My email is jane.doe@example.com and "
+        "my phone is 555-123-4567, please call me back."
+    )
+    result = summarize_conversation(conversation)
+
+    assert "jane.doe@example.com" not in result["summary"]
+    assert "555-123-4567" not in result["summary"]
+    assert not any("@" in k for k in result["keywords"])
+    assert not any(any(c.isdigit() for c in k) for k in result["keywords"])
+
+
+def test_self_introduced_name_is_stripped(monkeypatch):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+    conversation = (
+        "Customer: Hi, my name is Roger Smith. I cannot login because my "
+        "password does not work."
+    )
+    result = summarize_conversation(conversation)
+
+    assert "roger" not in result["summary"].lower()
+    assert "smith" not in result["summary"].lower()
+    assert "roger" not in result["keywords"]
+    assert result["intent"] == "Password Reset"
+
+
+def test_sentence_initial_self_introduction_is_stripped(monkeypatch):
+    """"This is Matthew" (capital T, sentence-initial) must be stripped just
+    like "my name is Roger" -- the intro-phrase match must be case-insensitive
+    even though the captured name itself stays case-sensitive."""
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+    conversation = (
+        "Customer: This is Matthew, I forgot my password too, cannot access "
+        "my account."
+    )
+    result = summarize_conversation(conversation)
+
+    assert "matthew" not in result["summary"].lower()
+    assert "matthew" not in result["keywords"]
+    assert result["intent"] == "Password Reset"
+
+
+def test_strip_pii_removes_email_phone_and_url():
+    text = "Contact me at a@b.com or call 555-987-6543, see https://example.com/x"
+    cleaned = strip_pii(text)
+    assert "@" not in cleaned
+    assert "555-987-6543" not in cleaned
+    assert "https://" not in cleaned
+
+
+def test_is_probable_person_name_heuristic():
+    assert is_probable_person_name("Roger", sentence_initial=False) is True
+    assert is_probable_person_name("Password", sentence_initial=True) is False
+    assert is_probable_person_name("password", sentence_initial=False) is False
+    assert is_probable_person_name("Guest", sentence_initial=False) is False

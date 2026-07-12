@@ -69,3 +69,94 @@ def test_deterministic_label_generator_is_stable():
 
     assert label1 == label2
     assert label1
+
+
+def test_label_prefers_intent_over_names_in_raw_text():
+    """Reproduces the reported bug: a cluster whose raw conversation text is
+    full of speaker names/sign-offs must label from the already-computed
+    intent column, never from a name (e.g. "Roger / Guest")."""
+    df = pd.DataFrame(
+        {
+            "ticket_id": ["T1", "T2", "T3"],
+            "subject": ["Login issue", "Cannot login", "Password trouble"],
+            "conversation_text": [
+                "Roger: Hi\n\nSupport Agent: Hello\n\nRoger: I forgot my password. Thanks, Jackie",
+                "Matthew: This is Matthew. I forgot my password too, cannot access account.",
+                "Jackie: I cannot login, my password is not working. Regards, Roger",
+            ],
+            "intent": ["Password Reset", "Password Reset", "Password Reset"],
+            "category": ["Authentication", "Authentication", "Authentication"],
+            "cluster_id": [5, 5, 5],
+        }
+    )
+
+    labeled = assign_cluster_labels(df)
+    label = labeled.iloc[0]["cluster_label"]
+
+    assert label == "Password Reset"
+    for banned in ("roger", "jackie", "matthew", "guest", "thank"):
+        assert banned not in label.lower()
+
+
+def test_label_falls_back_to_category_when_intent_missing():
+    df = pd.DataFrame(
+        {
+            "ticket_id": ["T1", "T2"],
+            "subject": ["Billing", "Billing"],
+            "conversation_text": ["Roger: I was overcharged.", "Jackie: Billing issue."],
+            "intent": ["", ""],
+            "category": ["Billing", "Billing"],
+            "cluster_id": [7, 7],
+        }
+    )
+
+    labeled = assign_cluster_labels(df)
+    assert labeled.iloc[0]["cluster_label"] == "Billing"
+
+
+def test_raw_text_fallback_never_emits_names_or_greetings():
+    """Adversarial fixture for the legacy tier-5 fallback (no intent/category/
+    summary/keywords columns available at all)."""
+    df = pd.DataFrame(
+        {
+            "ticket_id": ["T1", "T2", "T3"],
+            "subject": ["Refund needed", "Refund please", "Refund request"],
+            "conversation_text": [
+                "Roger: Hi\n\nAgent: Hello\n\nRoger: I need a refund for my order. Thanks, Jackie",
+                "Matthew: This is Matthew, please refund my duplicate charge. Regards, Roger",
+                "Jackie: Refund my payment, it was charged twice. Best, Matthew",
+            ],
+            "cluster_id": [9, 9, 9],
+        }
+    )
+
+    labeled = assign_cluster_labels(df)
+    label = labeled.iloc[0]["cluster_label"]
+
+    # "refund" appears in every document so TF-IDF naturally deprioritizes it
+    # in favor of more distinctive terms (charge/duplicate/payment) -- the
+    # real assertion here is that no name/greeting ever leaks into the label.
+    assert label and label != "Cluster 9"
+    for banned in ("roger", "jackie", "matthew", "thank", "hi", "hello"):
+        assert banned not in label.lower()
+
+
+def test_raw_text_fallback_handles_all_stopword_documents_without_crashing():
+    """scikit-learn's TfidfVectorizer raises ValueError("empty vocabulary")
+    when every token across all documents is filtered out as a stopword or
+    probable name -- the fallback tier must degrade to "Cluster N" instead
+    of propagating that exception."""
+    df = pd.DataFrame(
+        {
+            "ticket_id": ["T1", "T2"],
+            "subject": ["Hi", "Thanks"],
+            "conversation_text": [
+                "Guest: Hi there, thanks so much",
+                "Guest: Thank you, regards",
+            ],
+            "cluster_id": [0, 0],
+        }
+    )
+
+    labeled = assign_cluster_labels(df)
+    assert labeled.iloc[0]["cluster_label"] == "Cluster 0"

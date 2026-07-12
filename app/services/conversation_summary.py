@@ -41,9 +41,58 @@ _GREETING_PHRASES = {
     "no",
     "bye",
     "goodbye",
+    "regards",
+    "best regards",
+    "kind regards",
+    "warm regards",
+    "sincerely",
+    "cheers",
+    "dear",
+    "please",
 }
 
+# A line that is nothing but a greeting/sign-off word plus one trailing
+# capitalized name token (e.g. "Thanks, Jackie", "Regards, Roger") is a
+# signature line, not conversational content -- never a source for
+# summaries, keywords, or (downstream) cluster labels.
+_SIGNATURE_LINE_RE = re.compile(
+    r"^(?:hi|hello|hey|dear|thanks|thank you|regards|best regards|kind regards|"
+    r"warm regards|sincerely|cheers|best)[,.]?\s+[A-Z][a-zA-Z'\-]*[.!]?$",
+    re.IGNORECASE,
+)
+
+# A sign-off clause trailing an otherwise-informative line (e.g. "...my
+# password is not working. Regards, Roger") -- stripped from the end of the
+# line rather than requiring the whole line to be just the signature.
+_TRAILING_SIGNATURE_RE = re.compile(
+    r"[.!]?\s*(?:regards|thanks|thank you|best regards|kind regards|"
+    r"warm regards|sincerely|cheers|best)[,]?\s+[A-Z][a-zA-Z'\-]*[.!]?$",
+    re.IGNORECASE,
+)
+
 _AGENT_SENDER_HINTS = ("agent", "support", "bot", "staff", "team", "rep")
+
+# Generic terms that should never, by themselves, become a cluster label --
+# greetings/sign-offs plus conversation-role words that leak in from raw
+# speaker labels ("Guest: ...", "Agent: ...").
+LABEL_SAFE_TERMS = _GREETING_PHRASES | {
+    "guest",
+    "customer",
+    "agent",
+    "support",
+    "staff",
+    "team",
+    "rep",
+    "representative",
+    "bot",
+}
+
+EMAIL_RE = re.compile(r"[\w.+-]+@[\w-]+\.[A-Za-z]{2,}")
+PHONE_RE = re.compile(r"\+?\d[\d\-\s().]{7,}\d")
+URL_RE = re.compile(r"https?://\S+|www\.\S+")
+_NAME_INTRO_RE = re.compile(
+    r"\b(?i:my name is|this is|i am|i'm)\s+([A-Z][a-zA-Z'\-]*(?:\s[A-Z][a-zA-Z'\-]*){0,2})",
+)
 
 _INTENT_RULES: list[tuple[str, tuple[str, ...]]] = [
     ("Password Reset|Authentication", ("password", "login", "log in", "locked out", "authentication", "reset my")),
@@ -101,6 +150,37 @@ _URGENT_WORDS = {
 _PROPER_NOUN_RE = re.compile(r"\b([A-Z][a-zA-Z0-9]+(?:\s[A-Z][a-zA-Z0-9]+){0,2})\b")
 _CODE_RE = re.compile(r"\B#\w+|\b[A-Z]{1,4}-?\d{3,}\b")
 _LINE_RE = re.compile(r"^(?P<speaker>[^:]{1,60}):\s*(?P<message>.*)$")
+
+
+def strip_pii(text: str) -> str:
+    """Blank out emails, phone numbers, and URLs so they never reach
+    summaries, keywords, intent classification, or cluster labels."""
+    cleaned = EMAIL_RE.sub(" ", text)
+    cleaned = URL_RE.sub(" ", cleaned)
+    cleaned = PHONE_RE.sub(" ", cleaned)
+    cleaned = _CODE_RE.sub(" ", cleaned)
+    return re.sub(r"\s+", " ", cleaned).strip()
+
+
+def strip_self_introduced_names(text: str) -> str:
+    """Strip self-introduced names ("my name is X", "this is X Y") from
+    analysis text -- the raw stored conversation is left untouched."""
+    return _NAME_INTRO_RE.sub(" ", text)
+
+
+def is_probable_person_name(token: str, sentence_initial: bool = False) -> bool:
+    """Deterministic heuristic for excluding likely person/company names from
+    labels and keywords when no NER model is available. A capitalized word
+    that isn't the first word of its sentence/line and isn't a known safe
+    term is treated as a probable proper noun (person or organization) and
+    excluded -- conservative by design, since unknown proper nouns should
+    never leak into labels (see LABEL_SAFE_TERMS / cluster_labeling.py)."""
+    cleaned = token.strip().strip(".,!?")
+    if not cleaned or sentence_initial:
+        return False
+    if cleaned.lower() in LABEL_SAFE_TERMS:
+        return False
+    return bool(re.fullmatch(r"[A-Z][a-zA-Z'\-]*(?:\s[A-Z][a-zA-Z'\-]*)*", cleaned))
 
 
 def summarize_conversation(conversation_text: str, subject: str = "") -> dict[str, Any]:
@@ -212,11 +292,18 @@ def _extract_customer_lines(text: str) -> list[str]:
             continue
         if any(hint in speaker for hint in _AGENT_SENDER_HINTS):
             continue
-        lines.append(message)
+        message = strip_pii(message)
+        message = strip_self_introduced_names(message).strip()
+        message = _TRAILING_SIGNATURE_RE.sub("", message).strip()
+        message = re.sub(r"\s+", " ", message).strip()
+        if message:
+            lines.append(message)
     return lines
 
 
 def _is_greeting(line: str) -> bool:
+    if _SIGNATURE_LINE_RE.match(line.strip()):
+        return True
     normalized = re.sub(r"[^a-z\s]", "", line.lower()).strip()
     if not normalized:
         return True
@@ -241,9 +328,22 @@ def _build_summary(informative_lines: list[str], subject: str) -> str:
     return f"Customer reported: {body}"
 
 
+def probable_name_tokens(text: str) -> set[str]:
+    """Lowercased tokens that look like person/company names (heuristic,
+    case-sensitive on the original text) -- excluded from keywords/labels."""
+    names: set[str] = set()
+    for sentence in re.split(r"(?<=[.!?])\s+", text):
+        words = sentence.split()
+        for idx, word in enumerate(words):
+            if is_probable_person_name(word, sentence_initial=(idx == 0)):
+                names.add(word.strip(".,!?").lower())
+    return names
+
+
 def _extract_keywords(text: str, max_keywords: int = 8) -> list[str]:
+    banned = probable_name_tokens(text) | LABEL_SAFE_TERMS
     tokens = re.findall(r"[a-zA-Z][a-zA-Z0-9']{2,}", text.lower())
-    filtered = [t for t in tokens if t not in ENGLISH_STOP_WORDS]
+    filtered = [t for t in tokens if t not in ENGLISH_STOP_WORDS and t not in banned]
     if not filtered:
         return []
     counts = Counter(filtered)
@@ -283,9 +383,22 @@ def _priority(sentiment: str, category: str, text: str) -> str:
 
 def _extract_entities(text: str) -> tuple[list[str], list[str]]:
     codes = sorted(set(_CODE_RE.findall(text)))
+
+    # Strip speaker-label prefixes ("Roger: ...") before scanning for proper
+    # nouns, so speaker/sender names never surface as entities in the first
+    # place, and blank out PII so it never appears as an "entity" either.
+    message_only_lines = []
+    for raw_line in text.splitlines():
+        match = _LINE_RE.match(raw_line.strip())
+        message_only_lines.append(match.group("message") if match else raw_line)
+    sanitized = "\n".join(message_only_lines)
+    sanitized = EMAIL_RE.sub(" ", sanitized)
+    sanitized = URL_RE.sub(" ", sanitized)
+    sanitized = PHONE_RE.sub(" ", sanitized)
+
     proper_nouns = [
         m.strip()
-        for m in _PROPER_NOUN_RE.findall(text)
+        for m in _PROPER_NOUN_RE.findall(sanitized)
         if m.strip().lower() not in {"customer", "agent", "guest", "support agent"}
     ]
     seen: set[str] = set()
@@ -298,7 +411,9 @@ def _extract_entities(text: str) -> tuple[list[str], list[str]]:
         unique_nouns.append(noun)
 
     entities = (unique_nouns[:5] + codes)[:8]
-    product_names = unique_nouns[:3]
+    # Probable person/company names are excluded from product_names --
+    # detected PERSON entities must never be treated as products/services.
+    product_names = [n for n in unique_nouns if not is_probable_person_name(n)][:3]
     return entities, product_names
 
 
@@ -395,7 +510,12 @@ def _parse_llm_json(content: str) -> dict[str, Any] | None:
 
 
 __all__ = [
+    "LABEL_SAFE_TERMS",
     "build_embedding_text",
+    "is_probable_person_name",
+    "probable_name_tokens",
+    "strip_pii",
+    "strip_self_introduced_names",
     "summarize_conversation",
     "summarize_conversations",
 ]

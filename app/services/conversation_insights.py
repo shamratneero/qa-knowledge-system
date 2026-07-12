@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from dataclasses import dataclass
 from datetime import timedelta
 from typing import Any
@@ -14,16 +15,25 @@ from app.services.conversation_analytics import (
 )
 
 
+_PRIORITY_RANK = {"low": 0, "medium": 1, "high": 2, "critical": 3}
+_RANK_PRIORITY = {v: k for k, v in _PRIORITY_RANK.items()}
+
+
 @dataclass(slots=True)
 class InsightsConfig:
     """Configurable thresholds for deterministic insight rules."""
 
     duplicate_rate_threshold: float = 0.35
     large_cluster_min_size: int = 8
+    # No longer used by _build_emerging_issues (that rule produced noise --
+    # nearly every singleton unique conversation qualified). Kept only so
+    # existing /analytics/insights callers passing this query param don't break.
     mostly_unique_threshold: float = 0.70
     rapid_growth_multiplier: float = 1.8
     rapid_growth_window_days: int = 7
     rapid_growth_min_recent: int = 3
+    emerging_min_cluster_size: int = 3
+    emerging_priority_threshold: str = "high"
 
 
 def generate_business_insights(config: InsightsConfig | None = None) -> dict[str, Any]:
@@ -64,10 +74,12 @@ def generate_business_insights(config: InsightsConfig | None = None) -> dict[str
     df["similarity_score"] = (
         pd.to_numeric(df["similarity_score"], errors="coerce").fillna(0.0).astype(float)
     )
-    if "intent" in df.columns:
-        df["intent"] = df["intent"].fillna("").astype(str)
-    else:
-        df["intent"] = ""
+    for optional_col, default in (("intent", ""), ("category", ""), ("priority", "low")):
+        if optional_col in df.columns:
+            df[optional_col] = df[optional_col].fillna(default).astype(str)
+            df.loc[df[optional_col].str.strip() == "", optional_col] = default
+        else:
+            df[optional_col] = default
 
     total = int(len(df))
     duplicate_count = int((df["status"] == "duplicate").sum())
@@ -160,14 +172,22 @@ def _cluster_statistics(df: pd.DataFrame) -> dict[str, dict[str, Any] | None]:
     }
 
 
+def _with_group_key(df: pd.DataFrame) -> pd.DataFrame:
+    """Add a group_key column: customer intent, falling back to cluster label
+    for legacy rows with no intent recorded. Recurring issues, automation
+    opportunities, and emerging issues all group by this key instead of raw
+    cluster wording or keyword frequency."""
+    work = df.copy()
+    work["group_key"] = work["intent"].str.strip()
+    work.loc[work["group_key"] == "", "group_key"] = work["cluster_label"]
+    return work
+
+
 def _build_recurring_issues(df: pd.DataFrame) -> list[dict[str, Any]]:
     """Group recurring issues by customer intent (falling back to cluster label for
     legacy rows with no intent recorded), instead of raw cluster wording."""
     total = max(int(len(df)), 1)
-
-    work = df.copy()
-    work["group_key"] = work["intent"].str.strip()
-    work.loc[work["group_key"] == "", "group_key"] = work["cluster_label"]
+    work = _with_group_key(df)
 
     grouped = (
         work.groupby("group_key", as_index=False)
@@ -216,41 +236,67 @@ def _build_recurring_issues(df: pd.DataFrame) -> list[dict[str, Any]]:
     return issues
 
 
+def _representative_cluster(group_df: pd.DataFrame) -> tuple[int, str]:
+    """Pick the most common (cluster_id, cluster_label) within a group_key group."""
+    if group_df.empty:
+        return 0, ""
+    representative_cluster = int(group_df["cluster_id"].value_counts().idxmax())
+    cluster_df = group_df[group_df["cluster_id"] == representative_cluster]
+    representative_label = (
+        str(cluster_df.iloc[0]["cluster_label"]) if not cluster_df.empty else ""
+    )
+    return representative_cluster, representative_label
+
+
+def _representative_ticket(group_df: pd.DataFrame) -> str:
+    if group_df.empty:
+        return ""
+    ranked = group_df.sort_values(
+        by=["similarity_score", "message_count", "ticket_id"],
+        ascending=[False, False, True],
+    )
+    return str(ranked.iloc[0]["ticket_id"]) if not ranked.empty else ""
+
+
 def _build_automation_opportunities(
     df: pd.DataFrame, cfg: InsightsConfig
 ) -> list[dict[str, Any]]:
     total = max(int(len(df)), 1)
+    work = _with_group_key(df)
     opportunities: list[dict[str, Any]] = []
 
-    grouped = df.groupby(["cluster_id", "cluster_label"], as_index=False)
-    for (cluster_id, cluster_label), cluster_df in grouped:
-        cluster_total = int(len(cluster_df))
-        duplicate_rate = float((cluster_df["status"] == "duplicate").sum()) / max(
-            cluster_total, 1
+    for group_key, group_df in work.groupby("group_key"):
+        group_total = int(len(group_df))
+        duplicate_rate = float((group_df["status"] == "duplicate").sum()) / max(
+            group_total, 1
         )
 
         reasons: list[str] = []
         if duplicate_rate >= cfg.duplicate_rate_threshold:
             reasons.append("high_duplicate_rate")
-        if cluster_total >= cfg.large_cluster_min_size:
+        if group_total >= cfg.large_cluster_min_size:
             reasons.append("large_cluster_volume")
 
         if not reasons:
             continue
 
-        # Deterministic estimate: base on duplicate rate and cluster share of total conversations.
-        estimated_rate = max(duplicate_rate, min(cluster_total / total, 0.7))
-        estimated_automatable = int(round(cluster_total * estimated_rate))
+        # Deterministic estimate: base on duplicate rate and group share of total conversations.
+        estimated_rate = max(duplicate_rate, min(group_total / total, 0.7))
+        estimated_automatable = int(round(group_total * estimated_rate))
+
+        representative_cluster, representative_label = _representative_cluster(group_df)
+        intent_value = group_df.iloc[0]["intent"].strip() if not group_df.empty else ""
 
         opportunities.append(
             {
-                "cluster_id": int(cluster_id),
-                "cluster_label": str(cluster_label),
-                "conversation_count": cluster_total,
+                "cluster_id": representative_cluster,
+                "cluster_label": representative_label,
+                "conversation_count": group_total,
                 "duplicate_rate": round(duplicate_rate * 100.0, 2),
                 "trigger_reasons": reasons,
                 "estimated_automatable_conversations": estimated_automatable,
                 "estimated_automation_opportunity": round(estimated_rate * 100.0, 2),
+                "intent": intent_value or None,
             }
         )
 
@@ -263,59 +309,94 @@ def _build_automation_opportunities(
     return opportunities
 
 
+def _average_priority(group_df: pd.DataFrame) -> tuple[str, float]:
+    ranks = [
+        _PRIORITY_RANK.get(str(p).strip().lower(), 0) for p in group_df["priority"].tolist()
+    ]
+    avg_rank = float(sum(ranks)) / max(len(ranks), 1)
+    label = _RANK_PRIORITY.get(round(avg_rank), _RANK_PRIORITY[min(3, max(0, round(avg_rank)))])
+    return label, avg_rank
+
+
 def _build_emerging_issues(
     df: pd.DataFrame, cfg: InsightsConfig
 ) -> list[dict[str, Any]]:
+    """Group by customer intent and flag a group as an emerging issue only when
+    it meets one of three explicit rules -- minimum size, rapid growth, or high
+    average priority -- instead of flagging nearly every singleton unique
+    conversation (the old "mostly unique" rule, which was pure noise)."""
+    work = _with_group_key(df)
+    priority_threshold_rank = _PRIORITY_RANK.get(
+        cfg.emerging_priority_threshold.strip().lower(), _PRIORITY_RANK["high"]
+    )
     emerging: list[dict[str, Any]] = []
 
-    grouped = df.groupby(["cluster_id", "cluster_label"], as_index=False)
-    for (cluster_id, cluster_label), cluster_df in grouped:
-        cluster_total = int(len(cluster_df))
-        if cluster_total == 0:
+    for group_key, group_df in work.groupby("group_key"):
+        group_total = int(len(group_df))
+        if group_total == 0:
             continue
 
-        unique_rate = float((cluster_df["status"] == "unique").sum()) / cluster_total
-        if unique_rate >= cfg.mostly_unique_threshold:
-            emerging.append(
-                {
-                    "cluster_id": int(cluster_id),
-                    "cluster_label": str(cluster_label),
-                    "reason": "mostly_unique_conversations",
-                    "conversation_count": cluster_total,
-                    "unique_rate": round(unique_rate * 100.0, 2),
-                }
-            )
+        growth_stats = _cluster_growth_stats(group_df, cfg.rapid_growth_window_days)
+        has_rapid_growth = bool(
+            growth_stats
+            and growth_stats["recent_count"] >= cfg.rapid_growth_min_recent
+            and growth_stats["growth_ratio"] >= cfg.rapid_growth_multiplier
+            and growth_stats["recent_count"] > growth_stats["previous_count"]
+        )
 
-        growth_stats = _cluster_growth_stats(cluster_df, cfg.rapid_growth_window_days)
-        if growth_stats is None:
+        average_priority_label, avg_priority_rank = _average_priority(group_df)
+        has_high_priority = avg_priority_rank >= priority_threshold_rank
+        has_min_size = group_total >= cfg.emerging_min_cluster_size
+
+        trigger_reasons: list[str] = []
+        if has_min_size:
+            trigger_reasons.append("minimum_cluster_size")
+        if has_rapid_growth:
+            trigger_reasons.append("rapid_growth")
+        if has_high_priority:
+            trigger_reasons.append("high_average_priority")
+
+        if not trigger_reasons:
             continue
 
-        recent = growth_stats["recent_count"]
-        previous = growth_stats["previous_count"]
-        growth_ratio = growth_stats["growth_ratio"]
+        representative_cluster, representative_label = _representative_cluster(group_df)
+        representative_ticket = _representative_ticket(group_df)
+        intent_value = group_df.iloc[0]["intent"].strip() or None
+        category_counts = Counter(
+            str(c).strip() for c in group_df["category"].tolist() if str(c).strip()
+        )
+        category_value = category_counts.most_common(1)[0][0] if category_counts else None
 
-        if (
-            recent >= cfg.rapid_growth_min_recent
-            and growth_ratio >= cfg.rapid_growth_multiplier
-            and recent > previous
-        ):
-            emerging.append(
-                {
-                    "cluster_id": int(cluster_id),
-                    "cluster_label": str(cluster_label),
-                    "reason": "rapid_cluster_growth",
-                    "conversation_count": cluster_total,
-                    "recent_count": int(recent),
-                    "previous_count": int(previous),
-                    "growth_ratio": round(growth_ratio, 2),
-                }
-            )
+        representative_row = group_df[group_df["ticket_id"] == representative_ticket]
+        summary_value = (
+            str(representative_row.iloc[0].get("summary", "") or "").strip()
+            if not representative_row.empty and "summary" in group_df.columns
+            else ""
+        )
+
+        growth_percentage = (
+            round((growth_stats["growth_ratio"] - 1.0) * 100.0, 2) if growth_stats else None
+        )
+
+        emerging.append(
+            {
+                "cluster_id": representative_cluster,
+                "cluster_label": representative_label,
+                "intent": intent_value,
+                "category": category_value,
+                "conversation_count": group_total,
+                "growth_percentage": growth_percentage,
+                "average_priority": average_priority_label,
+                "summary": summary_value,
+                "representative_ticket": representative_ticket,
+                "trigger_reasons": trigger_reasons,
+            }
+        )
 
     emerging.sort(
         key=lambda item: (
             -item.get("conversation_count", 0),
             item["cluster_id"],
-            item["reason"],
         )
     )
     return emerging

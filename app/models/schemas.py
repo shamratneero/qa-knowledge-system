@@ -247,7 +247,7 @@ class RecurringIssue(BaseModel):
 
 
 class AutomationOpportunity(BaseModel):
-    """Cluster that meets deterministic automation opportunity criteria."""
+    """Group (by customer intent) that meets deterministic automation opportunity criteria."""
 
     cluster_id: int
     cluster_label: str
@@ -256,19 +256,23 @@ class AutomationOpportunity(BaseModel):
     trigger_reasons: list[str]
     estimated_automatable_conversations: int
     estimated_automation_opportunity: float
+    intent: Optional[str] = None
 
 
 class EmergingIssue(BaseModel):
-    """Potential emerging issue based on uniqueness or growth signals."""
+    """Emerging customer issue, grouped by intent, that meets an explicit
+    minimum-size, growth, or priority rule (never every unique conversation)."""
 
     cluster_id: int
     cluster_label: str
-    reason: str
+    intent: Optional[str] = None
+    category: Optional[str] = None
     conversation_count: int
-    unique_rate: float | None = None
-    recent_count: int | None = None
-    previous_count: int | None = None
-    growth_ratio: float | None = None
+    growth_percentage: Optional[float] = None
+    average_priority: str = "low"
+    summary: str = ""
+    representative_ticket: str = ""
+    trigger_reasons: list[str] = []
 
 
 class AnalyticsInsightsResponse(BaseModel):

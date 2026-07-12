@@ -281,7 +281,7 @@
       /* ---------- Filters / table ---------- */
       .filter-bar {
         display: grid;
-        grid-template-columns: 1.4fr 1fr 0.8fr 0.8fr 0.8fr auto;
+        grid-template-columns: 1.4fr 1fr 1fr 0.8fr 0.8fr 0.8fr auto;
         gap: 10px;
         align-items: center;
         background: var(--card);
@@ -528,6 +528,9 @@
                 <option value="similar">Similar</option>
                 <option value="unique">Unique</option>
               </select>
+              <select id="analyticsIntent">
+                <option value="">All intents</option>
+              </select>
               <input id="analyticsCluster" type="number" min="0" placeholder="Cluster ID" />
               <input id="analyticsMinSim" type="number" min="0" max="1" step="0.01" placeholder="Min similarity" />
               <input id="analyticsMaxSim" type="number" min="0" max="1" step="0.01" placeholder="Max similarity" />
@@ -642,6 +645,7 @@
       const kpiSecondaryEl = document.getElementById("kpiSecondary");
       const analyticsSearchEl = document.getElementById("analyticsSearch");
       const analyticsStatusEl = document.getElementById("analyticsStatus");
+      const analyticsIntentEl = document.getElementById("analyticsIntent");
       const analyticsClusterEl = document.getElementById("analyticsCluster");
       const analyticsMinSimEl = document.getElementById("analyticsMinSim");
       const analyticsMaxSimEl = document.getElementById("analyticsMaxSim");
@@ -871,7 +875,7 @@
         insightsSummaryCardsEl.innerHTML = summaryCards.map(([label, value]) => `<div class="kpi-card"><div class="kpi-label">${label}</div><div class="kpi-value" style="font-size:1.2rem;">${value}</div></div>`).join("");
 
         insightsAutomationEl.innerHTML = (data.automation_opportunities || []).map((item) =>
-          insightCard(item.cluster_label, `${item.conversation_count} conversations`, `${Number(item.duplicate_rate || 0).toFixed(0)}% duplicate rate &middot; estimated automation ${Number(item.estimated_automation_opportunity || 0).toFixed(0)}%`)
+          insightCard(item.intent || item.cluster_label, `${item.conversation_count} conversations`, `${Number(item.duplicate_rate || 0).toFixed(0)}% duplicate rate &middot; estimated automation ${Number(item.estimated_automation_opportunity || 0).toFixed(0)}%`)
         ).join("") || `<div class="empty-state"><div class="art">⚙️</div>No automation opportunities detected yet.</div>`;
 
         insightsRecurringEl.innerHTML = (data.recurring_issues || []).map((item) =>
@@ -879,10 +883,14 @@
         ).join("") || `<div class="empty-state"><div class="art">📋</div>No recurring issues yet.</div>`;
 
         insightsEmergingEl.innerHTML = (data.emerging_issues || []).map((item) => {
-          const body = item.reason === "rapid_cluster_growth"
-            ? `Growing rapidly: ${item.recent_count || 0} recent vs ${item.previous_count || 0} previous (${Number(item.growth_ratio || 0).toFixed(1)}x)`
-            : `Mostly unique conversations (${Number(item.unique_rate || 0).toFixed(0)}%) &mdash; may indicate a new issue.`;
-          return insightCard(item.cluster_label, `${item.conversation_count} conversations`, body);
+          const meta = [
+            item.category ? `Category: ${item.category}` : null,
+            `${item.conversation_count} conversations`,
+            item.growth_percentage !== null && item.growth_percentage !== undefined ? `Growth: ${Number(item.growth_percentage).toFixed(0)}%` : null,
+            `Priority: ${item.average_priority || "low"}`,
+          ].filter(Boolean).join(" &middot; ");
+          const body = `${item.summary || "No summary available."}<br><span class="meta">Representative ticket: ${item.representative_ticket || "-"}</span>`;
+          return insightCard(item.intent || item.cluster_label, meta, body);
         }).join("") || `<div class="empty-state"><div class="art">🌱</div>No emerging issues detected.</div>`;
 
         insightsRecommendationsEl.innerHTML = (data.recommendations || []).map((item) =>
@@ -978,6 +986,7 @@
         const params = new URLSearchParams();
         if (analyticsSearchEl.value.trim()) params.set("search", analyticsSearchEl.value.trim());
         if (analyticsStatusEl.value) params.set("status", analyticsStatusEl.value);
+        if (analyticsIntentEl.value) params.set("intent", analyticsIntentEl.value);
         if (analyticsClusterEl.value.trim()) params.set("cluster_id", analyticsClusterEl.value.trim());
         if (analyticsMinSimEl.value.trim()) params.set("min_similarity", analyticsMinSimEl.value.trim());
         if (analyticsMaxSimEl.value.trim()) params.set("max_similarity", analyticsMaxSimEl.value.trim());
@@ -1054,6 +1063,15 @@
         window.location.href = format === "excel" ? `/analytics/export/excel?${qs}` : `/analytics/export/csv?${qs}`;
       }
 
+      function renderIntentOptions(intents) {
+        const previous = analyticsIntentEl.value;
+        const options = ["<option value=\"\">All intents</option>"].concat(
+          (intents || []).map((intent) => `<option value="${intent}">${intent}</option>`)
+        );
+        analyticsIntentEl.innerHTML = options.join("");
+        if (previous && intents.includes(previous)) analyticsIntentEl.value = previous;
+      }
+
       async function loadAnalytics() {
         analyticsBtn.disabled = true;
         analyticsStatusTextEl.innerHTML = loadingText("Loading analytics...");
@@ -1061,16 +1079,18 @@
         const params = new URLSearchParams(buildAnalyticsQueryString());
         params.set("limit", "100");
         try {
-          const [overviewRes, tableRes, insightsRes, chartsRes] = await Promise.all([
+          const [overviewRes, tableRes, insightsRes, chartsRes, intentsRes] = await Promise.all([
             fetch("/analytics/overview"),
             fetch(`/analytics/conversations?${params.toString()}`),
             fetch("/analytics/insights"),
             fetch("/analytics/charts"),
+            fetch("/analytics/intents"),
           ]);
           const overview = await overviewRes.json();
           const table = await tableRes.json();
           const insights = await insightsRes.json();
           const chartData = await chartsRes.json();
+          const intentsData = await intentsRes.json();
           if (!overviewRes.ok) throw new Error(overview.detail || "Failed loading overview");
           if (!tableRes.ok) throw new Error(table.detail || "Failed loading table");
           if (!insightsRes.ok) throw new Error(insights.detail || "Failed loading insights");
@@ -1080,6 +1100,7 @@
           renderAnalyticsTable(table);
           renderInsights(insights);
           renderCharts(chartData);
+          if (intentsRes.ok) renderIntentOptions(intentsData.items || []);
           await loadKnowledgeDashboard();
         } catch (err) {
           const message = err.message || "Failed to load analytics.";

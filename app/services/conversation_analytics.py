@@ -92,6 +92,7 @@ def get_analytics_overview() -> dict[str, Any]:
 def list_conversations(
     status: str | None = None,
     cluster_id: int | None = None,
+    intent: str | None = None,
     search: str | None = None,
     min_similarity: float | None = None,
     max_similarity: float | None = None,
@@ -108,6 +109,9 @@ def list_conversations(
 
         if cluster_id is not None:
             query = query.filter(ConversationThread.cluster_id == cluster_id)
+
+        if intent:
+            query = query.filter(ConversationThread.intent == intent)
 
         if search:
             search_like = f"%{search}%"
@@ -176,12 +180,30 @@ def list_conversations(
         db.close()
 
 
-__all__ = ["get_analytics_overview", "list_conversations"]
+def list_distinct_intents() -> list[str]:
+    """Return the distinct, non-empty customer intents present in the current
+    conversation dataset, sorted alphabetically -- used to populate the
+    dashboard's Intent filter dropdown."""
+    db = SessionLocal()
+    try:
+        rows = (
+            db.query(ConversationThread.intent)
+            .filter(
+                ConversationThread.intent.isnot(None),
+                ConversationThread.intent != "",
+            )
+            .distinct()
+            .all()
+        )
+        return sorted({str(r[0]) for r in rows if str(r[0]).strip()})
+    finally:
+        db.close()
 
 
 def export_conversations(
     status: str | None = None,
     cluster_id: int | None = None,
+    intent: str | None = None,
     search: str | None = None,
     min_similarity: float | None = None,
     max_similarity: float | None = None,
@@ -190,6 +212,7 @@ def export_conversations(
     data = list_conversations(
         status=status,
         cluster_id=cluster_id,
+        intent=intent,
         search=search,
         min_similarity=min_similarity,
         max_similarity=max_similarity,
@@ -406,4 +429,5 @@ __all__ = [
     "get_conversation_detail",
     "invalidate_analytics_cache",
     "list_conversations",
+    "list_distinct_intents",
 ]

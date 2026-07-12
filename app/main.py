@@ -57,6 +57,7 @@ from app.services.conversation_analytics import (
     get_conversation_detail,
     invalidate_analytics_cache,
     list_conversations,
+    list_distinct_intents,
 )
 from app.services.conversation_insights import (
     InsightsConfig,
@@ -333,6 +334,8 @@ def analytics_insights(
     rapid_growth_multiplier: float = Query(default=1.8, ge=1.0, le=20.0),
     rapid_growth_window_days: int = Query(default=7, ge=1, le=90),
     rapid_growth_min_recent: int = Query(default=3, ge=1, le=10000),
+    emerging_min_cluster_size: int = Query(default=3, ge=1, le=10000),
+    emerging_priority_threshold: str = Query(default="high"),
 ):
     """Return deterministic business insights built from persisted conversation analytics."""
     config = InsightsConfig(
@@ -342,6 +345,8 @@ def analytics_insights(
         rapid_growth_multiplier=rapid_growth_multiplier,
         rapid_growth_window_days=rapid_growth_window_days,
         rapid_growth_min_recent=rapid_growth_min_recent,
+        emerging_min_cluster_size=emerging_min_cluster_size,
+        emerging_priority_threshold=emerging_priority_threshold,
     )
     payload = generate_business_insights(config=config)
     logger.info(
@@ -377,6 +382,7 @@ def analytics_overview():
 def analytics_conversations(
     status: str | None = Query(default=None),
     cluster_id: int | None = Query(default=None),
+    intent: str | None = Query(default=None),
     search: str | None = Query(default=None),
     min_similarity: float | None = Query(default=None, ge=0.0, le=1.0),
     max_similarity: float | None = Query(default=None, ge=0.0, le=1.0),
@@ -385,10 +391,11 @@ def analytics_conversations(
     ),
     offset: int = Query(default=0, ge=0),
 ):
-    """Return dashboard table rows with status/cluster/search/similarity filtering."""
+    """Return dashboard table rows with status/cluster/intent/search/similarity filtering."""
     data = list_conversations(
         status=status,
         cluster_id=cluster_id,
+        intent=intent,
         search=search,
         min_similarity=min_similarity,
         max_similarity=max_similarity,
@@ -396,6 +403,16 @@ def analytics_conversations(
         offset=offset,
     )
     return ConversationTableResponse(**data)
+
+
+@app.get(
+    "/analytics/intents",
+    tags=["Analytics"],
+    summary="Distinct customer intents present in the current dataset",
+)
+def analytics_intents():
+    """Return the distinct customer intents available, for filter dropdowns."""
+    return {"items": list_distinct_intents()}
 
 
 @app.get(
@@ -419,6 +436,7 @@ def analytics_conversation_detail(conversation_id: int):
 def export_analytics_csv(
     status: str | None = Query(default=None),
     cluster_id: int | None = Query(default=None),
+    intent: str | None = Query(default=None),
     search: str | None = Query(default=None),
     min_similarity: float | None = Query(default=None, ge=0.0, le=1.0),
     max_similarity: float | None = Query(default=None, ge=0.0, le=1.0),
@@ -426,6 +444,7 @@ def export_analytics_csv(
     rows = export_conversations(
         status=status,
         cluster_id=cluster_id,
+        intent=intent,
         search=search,
         min_similarity=min_similarity,
         max_similarity=max_similarity,
@@ -451,6 +470,7 @@ def export_analytics_csv(
 def export_analytics_excel(
     status: str | None = Query(default=None),
     cluster_id: int | None = Query(default=None),
+    intent: str | None = Query(default=None),
     search: str | None = Query(default=None),
     min_similarity: float | None = Query(default=None, ge=0.0, le=1.0),
     max_similarity: float | None = Query(default=None, ge=0.0, le=1.0),
@@ -458,6 +478,7 @@ def export_analytics_excel(
     rows = export_conversations(
         status=status,
         cluster_id=cluster_id,
+        intent=intent,
         search=search,
         min_similarity=min_similarity,
         max_similarity=max_similarity,

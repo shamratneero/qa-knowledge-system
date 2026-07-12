@@ -57,3 +57,65 @@ Both run automatically on the next write (upload or ingest) against an existing 
 - `pytest` — 82/82 passed (12 new/additive tests; zero existing tests modified).
 - End-to-end smoke test via `TestClient` against the real SQLite database: upload → `/analytics/conversations` → `/analytics/conversations/{id}` (summary, intent, keywords, `cluster_explanation` all populated) → `/analytics/insights` (recurring issues grouped by intent) → `/ai/query` (deterministic mode, no LLM key set) — all returned HTTP 200 with correct, intent-aware data.
 - `/ui` dashboard HTML verified to render the new Summary/Intent/Category/Sentiment/Priority columns and the cluster-explanation panel.
+
+---
+
+# Milestone 2: Meaningful Cluster Labels & Business Insight Grouping
+
+## 1. What changed
+
+**Root cause fixed.** Cluster labels were showing things like "Roger / Guest", "Matthew / Safeai", "Jackie / Thank". `app/services/cluster_labeling.py`'s `DeterministicClusterLabelGenerator` ran TF-IDF directly over **raw** `subject` + `conversation_text` — e.g. `"Roger: I need help"`, `"Thanks, Jackie"` — so speaker names and email sign-offs became the top-scoring "terms," even though `app/services/conversation_summary.py` (Milestone 1) already computes a clean, controlled-vocabulary `intent`/`category` per conversation that cluster labeling simply never consulted.
+
+**`DeterministicClusterLabelGenerator.generate_label` rewritten as a strict priority tier chain:**
+
+1. **Intent** — mode of the cluster's `intent` values (a fixed, rule-derived vocabulary — e.g. "Password Reset" — that can never contain a name).
+2. **Category** — same, over `category` (e.g. "Authentication").
+3. **Summary-derived** — top terms extracted from the cluster's representative `summary` text, after PII/name stripping.
+4. **Keywords-column-derived** — aggregated, filtered terms from the precomputed `keywords` column.
+5. **Sanitized raw-text TF-IDF** — legacy fallback, only reached when a cluster carries none of the columns above (e.g. a caller that builds a cluster DataFrame without running summarization first). Hardened: strips `"Speaker: "` line prefixes before building the TF-IDF corpus, blanks out PII, uses an extended stopword list, and rejects any ranked term containing a probable person/company name.
+6. `"Cluster {id}"` — unchanged ultimate fallback.
+
+**Filtering foundation expanded in `conversation_summary.py`** (shared by both the summarization pipeline and cluster labeling):
+- Greeting/stopword list expanded with sign-offs (`regards`, `sincerely`, `cheers`, etc.).
+- New signature-line detector catches lines that are just a greeting/sign-off plus a trailing name (`"Thanks, Jackie"`, `"Regards, Roger"`) — previously only *pure* greeting lines were filtered, so this exact pattern (the "Jackie / Thank" bug) slipped through.
+- New `strip_pii()` blanks emails, phone numbers, and URLs out of summaries/keywords/entities.
+- New self-introduced-name stripper removes `"my name is X"` / `"this is X"` / `"I am X"` spans from analysis text (the stored raw conversation is untouched).
+- New `is_probable_person_name()` heuristic — a capitalized word that isn't sentence-initial and isn't a known safe term is treated as a probable name/company and excluded. Applied to keyword extraction, entity extraction (`product_names` never contains a probable person name), and the cluster-labeling fallback tier.
+
+**Business insights now group by intent, not cluster/keyword frequency.** `_build_automation_opportunities` and `_build_emerging_issues` (in `app/services/conversation_insights.py`) switched to the same intent-with-cluster-label-fallback grouping already used by `_build_recurring_issues`.
+
+**Emerging Issues rule engine replaced.** The old rule flagged *any* cluster where ≥70% of conversations were "unique" — in practice this meant almost every singleton conversation qualified, flooding the section with noise. Replaced with three explicit, independently-configurable OR-gated rules:
+- group has ≥ `emerging_min_cluster_size` conversations (default **3**), **or**
+- growth exceeds the existing `rapid_growth_multiplier`/`rapid_growth_window_days`/`rapid_growth_min_recent` thresholds, **or**
+- average priority (via a `low=0/medium=1/high=2/critical=3` rank) ≥ `emerging_priority_threshold` (default **"high"**).
+
+**Card content redesigned** (`EmergingIssue` schema) to match the spec: `intent`, `category`, `conversation_count`, `growth_percentage`, `average_priority`, `summary` (the representative conversation's already-computed summary — LLM-generated when configured, deterministic otherwise, exactly as Milestone 1 produces it), `representative_ticket`, plus `trigger_reasons` (which gate(s) fired). `AutomationOpportunity` gained an `intent` field. `/analytics/insights` gained two new query parameters (`emerging_min_cluster_size`, `emerging_priority_threshold`); every existing parameter is unchanged.
+
+## 2. Why labels are now more meaningful
+
+Intent and category are drawn from a fixed, rule-derived vocabulary (`_INTENT_RULES` in `conversation_summary.py`, or an LLM constrained to the same JSON contract) — they describe *what the customer needed*, not what words appeared most often in the raw transcript. By consulting that vocabulary first instead of running TF-IDF over unfiltered text, labels became descriptions of customer problems ("Password Reset", "Refund Request", "Booking Inquiry") instead of incidental artifacts of who happened to write the message or how they signed off. Business insights (Recurring/Automation/Emerging) now aggregate on that same semantic key, so a "Password Reset" issue reported across differently-worded, differently-signed conversations is correctly recognized as one problem instead of fragmenting by raw cluster ID.
+
+## 3. How false labels were prevented
+
+- **Wiring, not just filtering**: the primary fix is that cluster labeling now *asks* the already-sanitized intent/category columns first — those columns structurally cannot contain a name, since they only ever come from a fixed rule table or a JSON-constrained LLM call.
+- **Speaker-prefix stripping**: the fallback TF-IDF tier strips `"Speaker: "` line prefixes before building its corpus — the primary leak vector in the original bug.
+- **PII/signature-line/self-introduction filtering**: emails, phone numbers, URLs, and sign-off lines are stripped before any text reaches keyword or summary extraction.
+- **Conservative fallback policy**: at the tier-5 fallback (the one tier that still touches raw, less-controlled text), *any* unknown capitalized proper noun — person or company — is excluded by default, rather than attempting to classify PERSON vs. ORGANIZATION with a heuristic that has no way to verify itself. Products/services only ever surface as labels through the controlled intent/category vocabulary.
+- **Case-sensitivity caught in testing**: an adversarial test (`test_raw_text_fallback_never_emits_names_or_greetings`) initially caught a real bug in this exact area — the name heuristic was being applied *after* TF-IDF had already lowercased its terms, so `"Matthew"` slipped through as `"matthew"`. Fixed by computing the banned-name-token set from the original, still-cased text before vectorization.
+- **Empty-vocabulary crash caught post-implementation**: the expanded stopword list made it possible for every token in a fallback-tier document to be filtered out (e.g. `"Thanks so much, regards"`), which makes scikit-learn's `TfidfVectorizer.fit_transform` raise `ValueError("empty vocabulary; perhaps the documents only contain stop words")` directly, before the existing empty-matrix guard could run. Wrapped in a `try/except ValueError` that degrades to the next fallback (`"Cluster {id}"`) instead of crashing; covered by `test_raw_text_fallback_handles_all_stopword_documents_without_crashing`.
+- **Two more case-sensitivity gaps caught via live end-to-end testing** (beyond unit tests, an actual upload through the real pipeline): (1) `"This is Matthew"` — a self-introduction at the very start of a message — wasn't stripped because the intro-phrase regex was fully case-sensitive and only matched lowercase `"this is"`, not sentence-initial `"This is"`. Fixed with a scoped `(?i:...)` group around just the trigger phrase, so the name-capture part stays case-sensitive (doesn't start matching lowercase words). (2) A sign-off *trailing* an otherwise-informative line (`"...password is not working. Regards, Roger"`) wasn't caught by the whole-line signature filter, which only recognized lines that were *entirely* a signature. Added a second regex that strips a trailing sign-off clause from the end of a line without discarding the informative content before it.
+- No NER library was added (consistent with Milestone 1's no-new-heavy-deps precedent) — all filtering is deterministic, regex/heuristic-based, and documented as best-effort where it is (the person-name heuristic will have both false positives and false negatives on adversarial input; it is intentionally conservative in the direction of excluding rather than leaking).
+
+## 4. Configurable thresholds added
+
+- `InsightsConfig.emerging_min_cluster_size` (default `3`) — minimum group size to qualify as an emerging issue.
+- `InsightsConfig.emerging_priority_threshold` (default `"high"`) — minimum average-priority rank to qualify.
+- Growth-based qualification reuses the *existing* `rapid_growth_multiplier` / `rapid_growth_window_days` / `rapid_growth_min_recent` fields (no new field needed — already configurable, already tested).
+- `InsightsConfig.mostly_unique_threshold` is kept in the schema (so existing `/analytics/insights?mostly_unique_threshold=...` query strings don't 422) but is no longer read by the emerging-issues rule — it was the source of the reported noise and has been superseded by the three rules above.
+
+## Verification performed (Milestone 2)
+
+- `pytest` — 101/101 passed (22 new/additive tests across `test_conversation_summary.py`, `test_cluster_labeling.py`, `test_conversation_insights.py`, `test_api.py`; one pre-existing assertion updated to match the intentionally-replaced emerging-issues rule; zero other existing tests modified).
+- **Follow-up: Intent filter added to the Conversations explorer.** A new `intent` dropdown (populated from `GET /analytics/intents`, a new read-only endpoint listing distinct intents currently in the dataset) sits next to the existing Status filter, wired into `list_conversations`/`export_conversations`/the CSV and Excel export routes exactly like the existing `status`/`cluster_id` filters — same pattern, fully additive, no existing filter behavior changed.
+- End-to-end reproduction of the exact reported bug: a 9-conversation fixture with speaker names, email/phone PII, and `"Thanks, Jackie"`/`"Regards, Roger"`-style sign-offs, run through the real upload pipeline. Resulting cluster labels: `"Password Reset"`, `"Refund Request"`, `"General Inquiry"`, `"Booking Inquiry"` — no name, greeting, or PII anywhere in any label, summary, or Emerging Issues card. Verified via direct API inspection and a Playwright screenshot of the rendered dashboard (zero console errors).
+- Confirmed a lone low-priority, non-growing conversation no longer appears in `emerging_issues` (direct regression test for the noise bug), while a single high-priority conversation and a 3-conversation recurring group both correctly qualify via their respective rules.
