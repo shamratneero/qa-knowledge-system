@@ -12,5 +12,11 @@ services:
         value: 0.0.0.0
       - key: PORT
         value: 8000
+      # Free tier is capped at 512MB. Each uvicorn worker independently
+      # imports sentence-transformers/PyTorch (real memory, ~300-400MB+ per
+      # process) -- the Dockerfile's default of 2 workers reliably exceeds
+      # the limit and gets OOM-killed in a crash loop. 1 worker fits.
+      - key: UVICORN_WORKERS
+        value: "1"
       - key: SECRET_KEY
         sync: false # set manually in the Render dashboard; do not commit a real value here

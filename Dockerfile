@@ -15,7 +15,9 @@ COPY data/ data/
 COPY pytest.ini .
 
 # Create a non-root runtime user for better container security.
-RUN useradd --create-home --shell /usr/sbin/nologin appuser && chown -R appuser:appuser /app
+# UID 1000 explicitly, matching Hugging Face Spaces' documented convention
+# for Docker-SDK Spaces (also harmless for every other deployment target).
+RUN useradd --create-home --uid 1000 --shell /usr/sbin/nologin appuser && chown -R appuser:appuser /app
 USER appuser
 
 EXPOSE 8000

@@ -1,6 +1,18 @@
+---
+title: Conversation Intelligence
+emoji: 💬
+colorFrom: blue
+colorTo: purple
+sdk: docker
+app_port: 8000
+pinned: false
+---
+
 # AI Conversation Intelligence Platform
 
 Production-ready FastAPI platform for conversation ingestion, semantic intelligence, analytics dashboards, historical knowledge growth, and retrieval-first AI assistance.
+
+> **Deployed on Hugging Face Spaces?** The free CPU tier's storage is ephemeral — the SQLite database (including any registered account and uploaded data) resets whenever the Space restarts, sleeps from inactivity, or rebuilds. Fine for trying it out; for anything you want to keep, either enable HF's paid Persistent Storage add-on for this Space, or self-host instead (Docker/Oracle Cloud Free Tier — see Docker section below).
 
 ## Project Overview
 
