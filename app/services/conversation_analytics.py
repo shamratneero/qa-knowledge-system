@@ -161,6 +161,12 @@ def list_conversations(
                 ),
                 "representative_conversation": str(r.conversation_text or "")[:320],
                 "conversation_text": str(r.conversation_text or ""),
+                "summary": str(r.summary or ""),
+                "intent": str(r.intent or ""),
+                "keywords": str(r.keywords or ""),
+                "category": str(r.category or ""),
+                "sentiment": str(r.sentiment or "neutral"),
+                "priority": str(r.priority or "low"),
             }
             for r in rows
         ]
@@ -319,6 +325,8 @@ def get_conversation_detail(conversation_id: int) -> dict[str, Any] | None:
                     "conversation_text": str(nearest_row.conversation_text or ""),
                 }
 
+        cluster_explanation = _build_cluster_explanation(db, row)
+
         return {
             "id": int(row.id),
             "ticket_id": str(row.ticket_id),
@@ -338,10 +346,57 @@ def get_conversation_detail(conversation_id: int) -> dict[str, Any] | None:
                 None if row.last_sent_at is None else row.last_sent_at.isoformat()
             ),
             "conversation_text": str(row.conversation_text or ""),
+            "summary": str(row.summary or ""),
+            "intent": str(row.intent or ""),
+            "keywords": str(row.keywords or ""),
+            "category": str(row.category or ""),
+            "sentiment": str(row.sentiment or "neutral"),
+            "priority": str(row.priority or "low"),
+            "cluster_explanation": cluster_explanation,
             "nearest_conversation": nearest,
         }
     finally:
         db.close()
+
+
+def _build_cluster_explanation(db, row: ConversationThread) -> str:
+    """Deterministic explanation of why a conversation belongs to its cluster."""
+    siblings = (
+        db.query(ConversationThread)
+        .filter(
+            ConversationThread.cluster_id == row.cluster_id,
+            ConversationThread.id != row.id,
+        )
+        .limit(50)
+        .all()
+    )
+
+    if not siblings:
+        return (
+            f"This conversation is currently the only member of cluster "
+            f"'{row.cluster_label or 'Cluster ' + str(row.cluster_id)}'."
+        )
+
+    own_keywords = {
+        k.strip().lower() for k in str(row.keywords or "").split(",") if k.strip()
+    }
+    sibling_keywords: set[str] = set()
+    for sibling in siblings:
+        sibling_keywords.update(
+            k.strip().lower() for k in str(sibling.keywords or "").split(",") if k.strip()
+        )
+    shared_keywords = sorted(own_keywords & sibling_keywords)[:5]
+
+    intent = str(row.intent or "").strip()
+    intent_clause = f"shares intent '{intent}'" if intent else "shares a similar topic"
+    keyword_clause = (
+        f" and keywords ({', '.join(shared_keywords)})" if shared_keywords else ""
+    )
+
+    return (
+        f"Grouped into cluster '{row.cluster_label}' because it {intent_clause}"
+        f"{keyword_clause} with {len(siblings)} other conversation(s) in this cluster."
+    )
 
 
 __all__ = [

@@ -104,3 +104,30 @@ def test_upload_conversations_rejects_oversized_file(client, monkeypatch):
 
     assert response.status_code == 413
     assert "File too large" in response.json()["detail"]
+
+
+def test_upload_conversations_preview_includes_intelligence_fields(client, monkeypatch):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+    response = client.post(
+        "/admin/conversations/upload?preview_count=2",
+        files={
+            "file": (
+                "conversations.xlsx",
+                _build_excel_bytes(),
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    password_row = next(
+        row for row in data["preview_rows"] if row["ticket_id"] == "105"
+    )
+    assert password_row["intent"] == "Password Reset"
+    assert password_row["category"] == "Authentication"
+    assert "password" in password_row["keywords"].lower()
+    assert password_row["summary"]
+    assert password_row["sentiment"] in {"positive", "neutral", "negative"}
+    assert password_row["priority"] in {"low", "medium", "high"}

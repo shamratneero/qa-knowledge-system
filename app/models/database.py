@@ -44,6 +44,12 @@ class ConversationThread(Base):
     nearest_ticket_id = Column(String(100), nullable=True, index=True)
     cluster_id = Column(Integer, nullable=False, default=0, index=True)
     cluster_label = Column(String(100), nullable=False, default="Cluster 0", index=True)
+    summary = Column(Text, nullable=False, default="")
+    intent = Column(String(120), nullable=False, default="", index=True)
+    keywords = Column(String(500), nullable=False, default="")
+    category = Column(String(100), nullable=False, default="", index=True)
+    sentiment = Column(String(20), nullable=False, default="neutral")
+    priority = Column(String(20), nullable=False, default="low", index=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     is_active = Column(Boolean, default=True)
@@ -69,6 +75,12 @@ class KnowledgeConversation(Base):
     classification = Column(
         String(32), nullable=False, default="new_intent", index=True
     )
+    summary = Column(Text, nullable=False, default="")
+    intent = Column(String(120), nullable=False, default="", index=True)
+    keywords = Column(String(500), nullable=False, default="")
+    category = Column(String(100), nullable=False, default="", index=True)
+    sentiment = Column(String(20), nullable=False, default="neutral")
+    priority = Column(String(20), nullable=False, default="low", index=True)
     upload_batch = Column(String(80), nullable=False, index=True)
     upload_timestamp = Column(
         DateTime, default=datetime.utcnow, nullable=False, index=True

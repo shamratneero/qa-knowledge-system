@@ -15,7 +15,11 @@ from app.core.config import settings
 from app.core.logging import logger
 from app.models.database import KnowledgeConversation
 from app.services.conversation_classification import _get_model
-from app.services.database import SessionLocal, init_db
+from app.services.database import (
+    SessionLocal,
+    _ensure_knowledge_conversation_schema,
+    init_db,
+)
 
 EMBED_SCALE = 1_000
 KNOWN_THRESHOLD = float(settings.known_threshold)
@@ -40,8 +44,10 @@ def ingest_conversations_to_knowledge_base(
     timestamp = upload_timestamp or datetime.utcnow()
     work = conversations_df.copy()
     init_db()
+    _ensure_knowledge_conversation_schema()
 
-    texts = [str(x or "") for x in work["conversation_text"].tolist()]
+    text_col = "embedding_text" if "embedding_text" in work.columns else "conversation_text"
+    texts = [str(x or "") for x in work[text_col].tolist()]
     embeddings = _encode_texts(texts)
 
     db = SessionLocal()
@@ -80,6 +86,12 @@ def ingest_conversations_to_knowledge_base(
                 cluster_label=str(row.get("cluster_label", "Cluster 0")),
                 similarity=int(round(float(similarity) * EMBED_SCALE)),
                 classification=classification,
+                summary=str(row.get("summary", "") or ""),
+                intent=str(row.get("intent", "") or ""),
+                keywords=str(row.get("keywords", "") or ""),
+                category=str(row.get("category", "") or ""),
+                sentiment=str(row.get("sentiment", "neutral") or "neutral"),
+                priority=str(row.get("priority", "low") or "low"),
                 upload_batch=upload_batch,
                 upload_timestamp=timestamp,
             )
@@ -151,6 +163,10 @@ def search_knowledge_base(
                                 like
                             ),
                             KnowledgeConversation.cluster_label.ilike(like),
+                            KnowledgeConversation.summary.ilike(like),
+                            KnowledgeConversation.intent.ilike(like),
+                            KnowledgeConversation.keywords.ilike(like),
+                            KnowledgeConversation.category.ilike(like),
                         )
                     )
                 q = q.filter(and_(*keyword_filters))
@@ -321,6 +337,12 @@ def _to_search_item(row: KnowledgeConversation) -> dict[str, Any]:
         "cluster_label": str(row.cluster_label or "Cluster 0"),
         "similarity": round(float(row.similarity or 0) / EMBED_SCALE, 4),
         "classification": str(row.classification or "new_intent"),
+        "summary": str(row.summary or ""),
+        "intent": str(row.intent or ""),
+        "keywords": str(row.keywords or ""),
+        "category": str(row.category or ""),
+        "sentiment": str(row.sentiment or "neutral"),
+        "priority": str(row.priority or "low"),
         "upload_batch": str(row.upload_batch),
         "upload_timestamp": (
             None if row.upload_timestamp is None else row.upload_timestamp.isoformat()

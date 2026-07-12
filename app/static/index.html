@@ -3,186 +3,173 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Q&A Knowledge System</title>
+    <title>Conversation Intelligence</title>
     <style>
       :root {
-        --bg: #f2f6fb;
+        --bg: #f7f9fc;
         --card: #ffffff;
-        --sidebar: #0f172a;
-        --sidebar-muted: #cbd5e1;
-        --text: #0f1f33;
+        --text: #10192b;
         --muted: #64748b;
-        --accent: #0b7a75;
-        --accent-2: #118ab2;
-        --accent-soft: #e7f7f7;
-        --border: #d8e3ef;
+        --primary: #2563eb;
+        --primary-dark: #1d4ed8;
+        --primary-soft: #eaf1ff;
+        --border: #e2e8f0;
         --danger: #b42318;
+        --success: #166534;
+        --success-bg: #dcfce7;
+        --warn: #8a5b00;
+        --warn-bg: #fff2d8;
+        --danger-bg: #fde2e1;
+        --radius-lg: 20px;
+        --radius-md: 14px;
+        --shadow: 0 12px 32px rgba(15, 23, 42, 0.07);
       }
       * { box-sizing: border-box; }
+      html { -webkit-text-size-adjust: 100%; }
       body {
         margin: 0;
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         color: var(--text);
-        background:
-          radial-gradient(circle at 10% 10%, #dff6ff 0%, transparent 35%),
-          radial-gradient(circle at 90% 0%, #dcfce7 0%, transparent 30%),
-          var(--bg);
+        background: var(--bg);
+        font-size: 17px;
+        line-height: 1.55;
       }
-      .wrap {
-        min-height: 100vh;
-        display: grid;
-        grid-template-columns: 250px 1fr;
+      button, input, select {
+        font-family: inherit;
       }
-      .sidebar {
-        background: linear-gradient(180deg, #0b1324 0%, var(--sidebar) 100%);
-        color: white;
-        padding: 22px 16px;
-        position: sticky;
-        top: 0;
-        height: 100vh;
-      }
-      .sidebar h2 {
-        margin: 0 0 6px;
-        font-size: 1rem;
-      }
-      .sidebar p {
-        margin: 0 0 18px;
-        color: var(--sidebar-muted);
-        font-size: 0.86rem;
-      }
-      .nav {
-        display: grid;
-        gap: 8px;
-      }
-      .nav a {
-        color: #e2e8f0;
-        text-decoration: none;
-        font-size: 0.92rem;
-        padding: 8px 10px;
-        border-radius: 8px;
-        background: rgba(255, 255, 255, 0.05);
-      }
-      .nav a:hover { background: rgba(255, 255, 255, 0.14); }
-      .content {
-        padding: 20px;
-      }
-      .card {
-        width: 100%;
-        background: var(--card);
-        border: 1px solid var(--border);
-        border-radius: 16px;
-        padding: 24px;
-        box-shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
-      }
-      .hero {
+      h1, h2, h3, h4 { line-height: 1.25; }
+      a { color: var(--primary); }
+
+      /* ---------- Top bar ---------- */
+      .topbar {
         display: flex;
-        gap: 12px;
+        align-items: center;
         justify-content: space-between;
-        flex-wrap: wrap;
+        padding: 16px 28px;
+        background: var(--card);
+        border-bottom: 1px solid var(--border);
       }
-      .hero .meta { margin-top: 6px; }
-      .pill {
-        border: 1px solid var(--border);
-        background: var(--accent-soft);
-        color: var(--accent);
-        border-radius: 999px;
-        padding: 6px 10px;
+      .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.1rem; }
+      .brand .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--primary); }
+      .topbar-actions { display: flex; gap: 10px; }
+
+      /* ---------- Buttons ---------- */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        border: none;
+        border-radius: 12px;
+        padding: 13px 22px;
+        font-size: 1rem;
         font-weight: 600;
-        font-size: 0.8rem;
-        height: fit-content;
+        cursor: pointer;
+        min-height: 48px;
       }
-      h1 {
-        margin: 0 0 8px;
-        font-size: clamp(1.4rem, 3vw, 2rem);
-      }
-      .sub {
-        margin: 0 0 18px;
-        color: var(--muted);
-      }
-      .row {
-        display: grid;
-        gap: 12px;
-      }
-      .controls {
-        display: grid;
-        gap: 12px;
-        grid-template-columns: 1fr 150px 110px;
-      }
-      input, select, button {
+      .btn:focus-visible { outline: 3px solid var(--primary-soft); outline-offset: 2px; }
+      .btn-primary { background: var(--primary); color: #fff; }
+      .btn-primary:hover { background: var(--primary-dark); }
+      .btn-secondary { background: #fff; color: var(--text); border: 1px solid var(--border); }
+      .btn-secondary:hover { background: #f1f5fb; }
+      .btn-large { padding: 20px 40px; font-size: 1.25rem; border-radius: 16px; }
+      .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+      input[type="text"], input[type="number"], select {
         border: 1px solid var(--border);
         border-radius: 10px;
-        padding: 12px;
+        padding: 12px 14px;
         font-size: 1rem;
+        background: #fff;
+        color: var(--text);
       }
-      input:focus, select:focus {
+      input:focus, select:focus, button:focus-visible {
         outline: none;
-        border-color: var(--accent-2);
-        box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px var(--primary-soft);
       }
-      button {
-        background: linear-gradient(120deg, var(--accent), var(--accent-2));
-        color: white;
-        border: none;
-        cursor: pointer;
-        font-weight: 600;
+
+      /* ---------- Screens ---------- */
+      .screen { display: none; }
+      .screen.active { display: block; }
+
+      /* ---------- Landing ---------- */
+      #screen-landing .landing-wrap {
+        min-height: calc(100vh - 65px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
       }
-      button:disabled { opacity: 0.6; cursor: not-allowed; }
-      .status {
-        min-height: 24px;
+      .landing-card {
+        max-width: 620px;
+        text-align: center;
+      }
+      .landing-card h1 {
+        font-size: clamp(2rem, 4vw, 2.75rem);
+        margin: 0 0 14px;
+      }
+      .landing-card p.desc {
+        color: var(--muted);
+        font-size: 1.15rem;
+        margin: 0 0 34px;
+      }
+      .landing-file-info {
+        margin-top: 18px;
         color: var(--muted);
         font-size: 0.95rem;
       }
-      .loading {
-        display: inline-block;
-        width: 14px;
-        height: 14px;
-        border: 2px solid #d9eef2;
-        border-top: 2px solid var(--accent-2);
-        border-radius: 50%;
-        animation: spin 0.8s linear infinite;
-        vertical-align: middle;
-        margin-right: 6px;
+      .landing-hint { display: none; }
+
+      /* ---------- Processing ---------- */
+      #screen-processing .processing-wrap {
+        max-width: 560px;
+        margin: 0 auto;
+        padding: 60px 20px;
       }
-      @keyframes spin { from { transform: rotate(0deg);} to { transform: rotate(360deg);} }
-      .result {
-        margin-top: 12px;
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 14px;
-        background: #fcfeff;
-      }
-      .answer {
-        margin: 0 0 8px;
-        line-height: 1.5;
-      }
-      .meta {
-        color: var(--muted);
-        font-size: 0.92rem;
-      }
-      .list {
-        margin-top: 12px;
-        padding-left: 18px;
-      }
-      .list li { margin: 6px 0; }
-      .upload {
-        margin-top: 18px;
-        padding-top: 18px;
-        border-top: 1px solid var(--border);
-      }
-      .upload-grid {
-        display: grid;
+      .processing-wrap h2 { text-align: center; margin: 0 0 6px; font-size: 1.6rem; }
+      .processing-wrap .sub { text-align: center; color: var(--muted); margin: 0 0 30px; }
+      .stage-list { list-style: none; margin: 0 0 20px; padding: 0; display: grid; gap: 10px; }
+      .stage {
+        display: flex;
+        align-items: center;
         gap: 12px;
-        grid-template-columns: 1fr 140px;
-      }
-      .upload-note {
+        padding: 12px 16px;
+        border-radius: var(--radius-md);
+        background: var(--card);
+        border: 1px solid var(--border);
         color: var(--muted);
-        font-size: 0.92rem;
-        margin: 8px 0 0;
+        font-weight: 500;
       }
+      .stage-icon {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        border: 2px solid var(--border);
+        flex: none;
+        position: relative;
+      }
+      .stage.active { color: var(--text); border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+      .stage.active .stage-icon { border-color: var(--primary); }
+      .stage.active .stage-icon::after {
+        content: "";
+        position: absolute; inset: 4px;
+        border-radius: 50%;
+        background: var(--primary);
+        animation: pulse 1s ease-in-out infinite;
+      }
+      .stage.done { color: var(--success); border-color: var(--success-bg); background: var(--success-bg); }
+      .stage.done .stage-icon { border-color: var(--success); background: var(--success); }
+      .stage.done .stage-icon::after {
+        content: "✓";
+        position: absolute; inset: 0;
+        display: flex; align-items: center; justify-content: center;
+        color: #fff; font-size: 0.75rem; font-weight: 700;
+      }
+      @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
       .upload-progress {
-        margin-top: 10px;
+        margin-top: 14px;
         width: 100%;
-        height: 10px;
+        height: 8px;
         border-radius: 999px;
         background: #e7eef7;
         overflow: hidden;
@@ -190,345 +177,448 @@
       .upload-progress > div {
         height: 100%;
         width: 0%;
-        background: linear-gradient(90deg, var(--accent), var(--accent-2));
+        background: var(--primary);
         transition: width 0.25s ease;
       }
-      .preview-summary {
-        margin-top: 12px;
+      .processing-status { text-align: center; margin-top: 14px; color: var(--muted); min-height: 22px; }
+      .processing-error { margin-top: 20px; text-align: center; }
+
+      /* ---------- Report ---------- */
+      #screen-report .report-header {
+        padding: 18px 28px 0;
+      }
+      .report-title-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+      .report-title-row h1 { font-size: 1.5rem; margin: 0; }
+      .tabs {
+        display: flex;
+        gap: 6px;
+        margin-top: 18px;
+        border-bottom: 1px solid var(--border);
+        overflow-x: auto;
+      }
+      .tab-btn {
+        background: none;
+        border: none;
+        padding: 12px 18px;
+        font-size: 1rem;
+        font-weight: 600;
         color: var(--muted);
-        font-size: 0.95rem;
+        cursor: pointer;
+        border-bottom: 3px solid transparent;
+        min-height: 44px;
+        white-space: nowrap;
       }
-      .preview-wrap {
-        margin-top: 12px;
-        overflow: auto;
-        border: 1px solid var(--border);
-        border-radius: 12px;
-      }
-      .analytics {
-        margin-top: 20px;
-        padding-top: 20px;
-        border-top: 1px solid var(--border);
-      }
+      .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+      .tab-btn:hover { color: var(--text); }
+      .report-body { padding: 24px 28px 60px; max-width: 1200px; margin: 0 auto; }
+      .tab-panel { display: none; }
+      .tab-panel.active { display: block; }
+      .section-block { margin-top: 30px; }
+      .section-block:first-child { margin-top: 0; }
+      .section-block h2 { font-size: 1.2rem; margin: 0 0 14px; }
+      .section-hint { color: var(--muted); font-size: 0.95rem; margin: -8px 0 14px; }
+
+      /* ---------- KPI cards ---------- */
       .kpi-grid {
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 10px;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 14px;
       }
-      .kpi {
+      .kpi-card {
+        background: var(--card);
         border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 10px;
-        background: #fcfeff;
+        border-radius: var(--radius-md);
+        padding: 20px;
+        box-shadow: var(--shadow);
       }
-      .kpi .label {
-        color: var(--muted);
-        font-size: 0.83rem;
-      }
-      .kpi .value {
-        margin-top: 4px;
-        font-size: 1.2rem;
-        font-weight: 700;
-      }
-      .analytics-filters {
+      .kpi-label { color: var(--muted); font-size: 0.88rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
+      .kpi-value { margin-top: 8px; font-size: 2rem; font-weight: 700; }
+      .kpi-secondary { display: flex; gap: 22px; margin-top: 14px; color: var(--muted); font-size: 0.95rem; flex-wrap: wrap; }
+      .kpi-secondary strong { color: var(--text); }
+
+      /* ---------- Insight cards ---------- */
+      .card-grid {
         display: grid;
-        grid-template-columns: 1fr 160px 140px 120px 120px 100px;
-        gap: 10px;
-        margin-top: 12px;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 14px;
       }
-      .analytics-actions {
-        display: flex;
-        gap: 10px;
-        margin-top: 10px;
-        flex-wrap: wrap;
-      }
-      .badge {
-        display: inline-block;
-        padding: 2px 8px;
-        border-radius: 999px;
-        font-size: 0.8rem;
-        font-weight: 600;
-      }
-      .badge.duplicate { background: #fde2e1; color: #a41f1b; }
-      .badge.similar { background: #fff2d8; color: #8a5b00; }
-      .badge.unique { background: #dcfce7; color: #166534; }
-      .clickable-row {
-        cursor: pointer;
-      }
-      .details-panel {
-        margin-top: 12px;
+      .insight-card {
+        background: var(--card);
         border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 12px;
-        background: #fcfeff;
-        white-space: pre-wrap;
+        border-radius: var(--radius-md);
+        padding: 18px;
+        box-shadow: var(--shadow);
       }
-      .insights-grid {
-        display: grid;
-        gap: 10px;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        margin-top: 12px;
-      }
-      .insights-panel {
-        margin-top: 12px;
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 12px;
-        background: #fcfeff;
-      }
-      .charts-grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 12px;
-        margin-top: 12px;
-      }
-      .chart-card {
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 12px;
-        background: #fff;
-      }
-      .chart-card h4 {
-        margin: 0 0 10px;
-        color: var(--text);
-        font-size: 0.95rem;
-      }
-      .chart-card canvas {
-        width: 100% !important;
-        height: 260px !important;
-      }
+      .insight-card-title { font-weight: 700; font-size: 1.02rem; margin-bottom: 4px; }
+      .insight-card-meta { color: var(--muted); font-size: 0.88rem; margin-bottom: 8px; }
+      .insight-card-body { font-size: 0.95rem; }
       .empty-state {
         text-align: center;
         border: 1px dashed var(--border);
-        border-radius: 12px;
-        padding: 18px;
+        border-radius: var(--radius-md);
+        padding: 26px;
         color: var(--muted);
+        grid-column: 1 / -1;
       }
-      .empty-state .art {
-        font-size: 1.5rem;
-        margin-bottom: 6px;
-      }
-      .banner {
-        display: none;
-        margin: 0 0 12px;
-        border-radius: 10px;
-        border: 1px solid #fecaca;
-        background: #fef2f2;
-        color: var(--danger);
-        padding: 10px;
-      }
-      .banner.show { display: block; }
-      .toast-wrap {
-        position: fixed;
-        right: 16px;
-        bottom: 16px;
+      .empty-state .art { font-size: 1.6rem; margin-bottom: 6px; }
+
+      /* ---------- Charts ---------- */
+      .charts-grid {
         display: grid;
-        gap: 8px;
-        z-index: 999;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
       }
-      .toast {
-        background: #0f172a;
-        color: #fff;
-        border-radius: 10px;
-        padding: 10px 12px;
-        font-size: 0.88rem;
-        min-width: 220px;
-        box-shadow: 0 8px 22px rgba(2, 6, 23, 0.3);
+      .chart-card {
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 16px;
+        background: var(--card);
+        box-shadow: var(--shadow);
       }
-      .insights-panel h3 {
-        margin: 0 0 10px;
-        font-size: 1rem;
-      }
-      .insights-list {
-        margin: 0;
-        padding-left: 18px;
-      }
-      .insights-list li {
-        margin: 6px 0;
-        font-size: 0.93rem;
-      }
-      .knowledge-search {
+      .chart-card h4 { margin: 0 0 10px; color: var(--text); font-size: 0.95rem; }
+      .chart-card canvas { width: 100% !important; height: 240px !important; }
+
+      /* ---------- Filters / table ---------- */
+      .filter-bar {
         display: grid;
-        grid-template-columns: 1fr 150px 130px;
+        grid-template-columns: 1.4fr 1fr 0.8fr 0.8fr 0.8fr auto;
         gap: 10px;
-        margin-top: 12px;
+        align-items: center;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 14px;
+        box-shadow: var(--shadow);
       }
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        min-width: 760px;
+      .table-toolbar { display: flex; align-items: center; justify-content: space-between; margin: 14px 0; flex-wrap: wrap; gap: 10px; }
+      .toggle-row { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 0.95rem; }
+      .toggle-row input { width: 18px; height: 18px; }
+      .preview-wrap {
+        overflow: auto;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        background: var(--card);
+        box-shadow: var(--shadow);
       }
-      th, td {
-        padding: 10px;
-        border-bottom: 1px solid var(--border);
-        text-align: left;
-        vertical-align: top;
-        font-size: 0.93rem;
+      table { width: 100%; border-collapse: collapse; min-width: 640px; }
+      th, td { padding: 12px 14px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; font-size: 0.94rem; }
+      th { background: #f8fbff; position: sticky; top: 0; font-weight: 700; }
+      .clickable-row { cursor: pointer; }
+      .clickable-row:hover { background: #f8fbff; }
+      .clickable-row:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+
+      .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 0.82rem; font-weight: 700; }
+      .badge.duplicate { background: var(--danger-bg); color: var(--danger); }
+      .badge.similar { background: var(--warn-bg); color: var(--warn); }
+      .badge.unique { background: var(--success-bg); color: var(--success); }
+      .badge.negative { background: var(--danger-bg); color: var(--danger); }
+      .badge.positive { background: var(--success-bg); color: var(--success); }
+      .badge.neutral { background: #eef2f7; color: var(--muted); }
+      .badge.priority-high { background: var(--danger-bg); color: var(--danger); }
+      .badge.priority-medium { background: var(--warn-bg); color: var(--warn); }
+      .badge.priority-low { background: var(--success-bg); color: var(--success); }
+
+      .chip { display: inline-block; background: var(--primary-soft); color: var(--primary-dark); border-radius: 999px; padding: 4px 12px; font-size: 0.85rem; font-weight: 600; margin: 0 6px 6px 0; }
+
+      details.disclosure { margin-top: 20px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--card); }
+      details.disclosure > summary { cursor: pointer; padding: 14px 16px; font-weight: 600; }
+      details.disclosure .disclosure-body { padding: 0 16px 16px; }
+
+      /* ---------- Export ---------- */
+      .export-row { display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap; }
+
+      /* ---------- Modal ---------- */
+      .modal-backdrop {
+        display: none;
+        position: fixed; inset: 0;
+        background: rgba(15, 23, 42, 0.55);
+        align-items: center; justify-content: center;
+        padding: 20px;
+        z-index: 1000;
       }
-      th {
-        background: #f8fbff;
-        position: sticky;
-        top: 0;
+      .modal-backdrop.open { display: flex; }
+      .modal {
+        background: #fff;
+        border-radius: var(--radius-lg);
+        max-width: 720px; width: 100%;
+        max-height: 86vh; overflow: auto;
+        box-shadow: 0 30px 60px rgba(2, 6, 23, 0.35);
+      }
+      .modal-header {
+        position: sticky; top: 0; background: #fff;
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 18px 22px; border-bottom: 1px solid var(--border);
+      }
+      .modal-header h3 { margin: 0; font-size: 1.2rem; }
+      .icon-btn {
+        background: #f1f5fb; border: none; border-radius: 10px;
+        width: 40px; height: 40px; font-size: 1.1rem; cursor: pointer; color: var(--text);
+      }
+      .modal-body { padding: 20px 22px 28px; }
+      .detail-meta-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+      .detail-block { margin-bottom: 18px; }
+      .detail-block h4 { margin: 0 0 8px; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); }
+      .detail-block .body-text { font-size: 1rem; }
+      .similar-card {
+        border: 1px solid var(--border); border-radius: var(--radius-md);
+        padding: 12px 14px; background: #fafcff; margin-top: 6px;
       }
       .conversation-box {
-        margin-top: 12px;
         border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 12px;
-        background: #fcfeff;
+        border-radius: var(--radius-md);
+        padding: 14px;
+        background: #fafcff;
         white-space: pre-wrap;
         line-height: 1.5;
       }
-      .error {
-        color: #b42318;
-        background: #fff1f1;
-        border: 1px solid #f7caca;
-        border-radius: 10px;
-        padding: 10px;
+
+      /* ---------- misc ---------- */
+      .status { min-height: 22px; color: var(--muted); font-size: 0.95rem; }
+      .loading {
+        display: inline-block; width: 14px; height: 14px;
+        border: 2px solid #d9eef2; border-top: 2px solid var(--primary);
+        border-radius: 50%; animation: spin 0.8s linear infinite;
+        vertical-align: middle; margin-right: 6px;
       }
-      @media (max-width: 760px) {
-        .wrap { grid-template-columns: 1fr; }
-        .sidebar {
-          height: auto;
-          position: relative;
-        }
-        .content { padding: 12px; }
-        .controls { grid-template-columns: 1fr; }
-        .upload-grid { grid-template-columns: 1fr; }
-        .kpi-grid { grid-template-columns: 1fr 1fr; }
-        .analytics-filters { grid-template-columns: 1fr; }
-        .insights-grid { grid-template-columns: 1fr; }
-        .knowledge-search { grid-template-columns: 1fr; }
+      @keyframes spin { from { transform: rotate(0deg);} to { transform: rotate(360deg);} }
+      .banner {
+        display: none;
+        position: sticky; top: 0; z-index: 500;
+        margin: 0; border-radius: 0;
+        border-bottom: 1px solid #fecaca;
+        background: #fef2f2; color: var(--danger);
+        padding: 12px 28px;
+      }
+      .banner.show { display: block; }
+      .toast-wrap { position: fixed; right: 16px; bottom: 16px; display: grid; gap: 8px; z-index: 999; }
+      .toast {
+        background: #0f172a; color: #fff; border-radius: 10px; padding: 10px 14px;
+        font-size: 0.9rem; min-width: 220px; box-shadow: 0 8px 22px rgba(2, 6, 23, 0.3);
+      }
+      .error {
+        color: var(--danger); background: #fff1f1;
+        border: 1px solid #f7caca; border-radius: 10px; padding: 12px;
+      }
+      .insights-list { margin: 0; padding-left: 18px; }
+      .insights-list li { margin: 6px 0; font-size: 0.93rem; }
+      .quick-answer-result {
+        margin-top: 14px; border: 1px solid var(--border); border-radius: var(--radius-md);
+        padding: 16px; background: var(--card);
+      }
+      .quick-answer-result .answer { margin: 0 0 8px; line-height: 1.5; }
+      .quick-answer-result .meta { color: var(--muted); font-size: 0.92rem; }
+      .search-row { display: grid; grid-template-columns: 1fr 150px 130px; gap: 10px; }
+
+      @media (max-width: 860px) {
+        .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         .charts-grid { grid-template-columns: 1fr; }
+        .filter-bar { grid-template-columns: 1fr 1fr; }
+        .search-row { grid-template-columns: 1fr; }
+        .report-body { padding: 18px 16px 50px; }
+        .topbar { padding: 14px 16px; }
+        #screen-report .report-header { padding: 14px 16px 0; }
+      }
+      @media (max-width: 520px) {
+        .kpi-grid { grid-template-columns: 1fr 1fr; }
+        .filter-bar { grid-template-columns: 1fr; }
       }
     </style>
   </head>
   <body>
-    <div class="wrap">
-      <aside class="sidebar">
-        <h2>Conversation Intelligence</h2>
-        <p>Production dashboard</p>
-        <nav class="nav">
-          <a href="#section-search">Search</a>
-          <a href="#section-upload">Upload</a>
-          <a href="#section-analytics">Analytics</a>
-          <a href="#section-insights">Insights</a>
-          <a href="#section-knowledge">Knowledge</a>
-          <a href="#section-ai">Ask AI</a>
-        </nav>
-      </aside>
-      <div class="content">
-      <main class="card">
-        <div id="errorBanner" class="banner"></div>
-        <div class="hero">
-          <div>
-            <h1>Ask the Knowledge Base</h1>
-            <p class="sub">Modern SaaS analytics workspace for conversation intelligence.</p>
+    <div id="errorBanner" class="banner" role="alert"></div>
+
+    <header class="topbar">
+      <div class="brand"><span class="dot"></span> Conversation Intelligence</div>
+      <div class="topbar-actions">
+        <button id="uploadAnotherBtn" class="btn btn-secondary" style="display:none;">Upload another file</button>
+      </div>
+    </header>
+
+    <!-- ============ LANDING ============ -->
+    <section id="screen-landing" class="screen active">
+      <div class="landing-wrap">
+        <div class="landing-card">
+          <h1>Understand your customer conversations in minutes</h1>
+          <p class="desc">Upload a conversation export and instantly see duplicate tickets, repeat issues, and what customers really need &mdash; no technical setup required.</p>
+          <input id="excelFile" type="file" accept=".xlsx,.xls" style="display:none;" />
+          <button id="uploadBtn" class="btn btn-primary btn-large">Upload Conversation Excel</button>
+          <div class="landing-file-info">Supported files: .xlsx or .xls, with <strong>Tickets</strong> and <strong>Conversations</strong> sheets.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ PROCESSING ============ -->
+    <section id="screen-processing" class="screen">
+      <div class="processing-wrap">
+        <h2>Processing your file&hellip;</h2>
+        <p class="sub" id="uploadSummary"></p>
+        <ol id="processingStages" class="stage-list" aria-live="polite"></ol>
+        <div class="upload-progress"><div id="uploadProgressBar"></div></div>
+        <div id="uploadStatus" class="processing-status" aria-live="polite"></div>
+        <div id="processingError" class="processing-error"></div>
+      </div>
+    </section>
+
+    <!-- ============ REPORT ============ -->
+    <section id="screen-report" class="screen">
+      <div class="report-header">
+        <div class="report-title-row">
+          <h1>Conversation Report</h1>
+        </div>
+        <div class="tabs" role="tablist" aria-label="Report sections">
+          <button class="tab-btn active" data-tab="overview" role="tab" aria-selected="true">Overview</button>
+          <button class="tab-btn" data-tab="conversations" role="tab" aria-selected="false">Conversations</button>
+          <button class="tab-btn" data-tab="knowledge" role="tab" aria-selected="false">Knowledge Base</button>
+          <button class="tab-btn" data-tab="ai" role="tab" aria-selected="false">Ask AI</button>
+        </div>
+      </div>
+
+      <div class="report-body">
+        <div id="analyticsStatusText" class="status" aria-live="polite"></div>
+
+        <!-- ---- Overview tab ---- -->
+        <div id="tab-overview" class="tab-panel active">
+          <div class="section-block">
+            <div class="kpi-grid" id="kpiGrid"></div>
+            <div class="kpi-secondary" id="kpiSecondary"></div>
           </div>
-          <div class="pill">Live Analytics</div>
+
+          <div class="section-block">
+            <h2>Top Customer Issues</h2>
+            <p class="section-hint">Grouped by what customers actually meant, not how they worded it.</p>
+            <div id="insightsRecurring" class="card-grid"></div>
+          </div>
+
+          <div class="section-block">
+            <h2>Automation Opportunities</h2>
+            <div id="insightsAutomation" class="card-grid"></div>
+          </div>
+
+          <div class="section-block">
+            <h2>Emerging Issues</h2>
+            <div id="insightsEmerging" class="card-grid"></div>
+          </div>
+
+          <div class="section-block">
+            <h2>Recommendations</h2>
+            <div id="insightsRecommendations" class="card-grid"></div>
+          </div>
+
+          <div class="section-block">
+            <div id="insightsSummaryCards" class="card-grid" style="margin-bottom: 16px;"></div>
+            <h2>Charts</h2>
+            <div class="charts-grid">
+              <div class="chart-card"><h4>Conversation Status</h4><canvas id="statusPieChart"></canvas></div>
+              <div class="chart-card"><h4>Cluster Distribution</h4><canvas id="clusterBarChart"></canvas></div>
+              <div class="chart-card"><h4>Daily Volume</h4><canvas id="dailyLineChart"></canvas></div>
+              <div class="chart-card"><h4>Top Recurring Issues</h4><canvas id="recurringChart"></canvas></div>
+            </div>
+          </div>
         </div>
 
-        <div class="row" id="section-search">
-          <div class="controls">
-            <input id="q" type="text" placeholder="Type your question..." />
-            <select id="method">
-              <option value="hybrid">hybrid</option>
-              <option value="keyword">keyword</option>
-              <option value="fuzzy">fuzzy</option>
-              <option value="semantic">semantic</option>
-            </select>
-            <button id="askBtn">Search</button>
+        <!-- ---- Conversations tab ---- -->
+        <div id="tab-conversations" class="tab-panel">
+          <div class="section-block">
+            <h2>Explore Conversations</h2>
+            <div class="filter-bar">
+              <input id="analyticsSearch" type="text" placeholder="Search ticket, subject, or conversation" />
+              <select id="analyticsStatus">
+                <option value="">All statuses</option>
+                <option value="duplicate">Duplicate</option>
+                <option value="similar">Similar</option>
+                <option value="unique">Unique</option>
+              </select>
+              <input id="analyticsCluster" type="number" min="0" placeholder="Cluster ID" />
+              <input id="analyticsMinSim" type="number" min="0" max="1" step="0.01" placeholder="Min similarity" />
+              <input id="analyticsMaxSim" type="number" min="0" max="1" step="0.01" placeholder="Max similarity" />
+              <button id="analyticsBtn" class="btn btn-primary">Filter</button>
+            </div>
+
+            <div class="table-toolbar">
+              <div class="toggle-row">
+                <input type="checkbox" id="techToggle" />
+                <label for="techToggle">Show technical columns</label>
+              </div>
+            </div>
+
+            <div id="analyticsTable"></div>
+
+            <details class="disclosure">
+              <summary>View last upload preview</summary>
+              <div class="disclosure-body">
+                <div id="previewTable"></div>
+                <div id="previewConversation"></div>
+              </div>
+            </details>
+
+            <div class="export-row">
+              <button id="exportCsvBtn" class="btn btn-secondary">Export CSV</button>
+              <button id="exportExcelBtn" class="btn btn-secondary">Export Excel</button>
+            </div>
           </div>
-          <div id="status" class="status"></div>
         </div>
 
-        <section id="output"></section>
-
-        <section class="upload" id="section-upload">
-          <h2 style="margin:0 0 8px; font-size:1.2rem;">Upload Conversation Excel</h2>
-          <p class="upload-note">Upload a workbook with <strong>Tickets</strong> and <strong>Conversations</strong> sheets. The app will group messages by Ticket ID and preview reconstructed conversations.</p>
-          <div class="upload-grid" style="margin-top: 12px;">
-            <input id="excelFile" type="file" accept=".xlsx,.xls" />
-            <button id="uploadBtn">Preview</button>
-          </div>
-          <div id="uploadStatus" class="status"></div>
-          <div class="upload-progress"><div id="uploadProgressBar"></div></div>
-          <div id="uploadSummary" class="preview-summary"></div>
-          <div id="previewTable"></div>
-          <div id="previewConversation"></div>
-        </section>
-
-        <section class="analytics" id="section-analytics">
-          <h2 style="margin:0 0 8px; font-size:1.2rem;">Conversation Analytics Dashboard</h2>
-          <p class="upload-note">KPI cards and filtered table from persisted conversation analytics.</p>
-
-          <div class="kpi-grid" id="kpiGrid"></div>
-
-          <div class="analytics-filters">
-            <input id="analyticsSearch" type="text" placeholder="Search ticket / subject / conversation / cluster" />
-            <select id="analyticsStatus">
-              <option value="">all status</option>
-              <option value="duplicate">duplicate</option>
-              <option value="similar">similar</option>
-              <option value="unique">unique</option>
-            </select>
-            <input id="analyticsCluster" type="number" min="0" placeholder="cluster id" />
-            <input id="analyticsMinSim" type="number" min="0" max="1" step="0.01" placeholder="min sim" />
-            <input id="analyticsMaxSim" type="number" min="0" max="1" step="0.01" placeholder="max sim" />
-            <button id="analyticsBtn">Load</button>
+        <!-- ---- Knowledge Base tab ---- -->
+        <div id="tab-knowledge" class="tab-panel">
+          <div class="section-block">
+            <h2>Quick Answer</h2>
+            <p class="section-hint">Ask a direct question against the knowledge base.</p>
+            <div class="search-row">
+              <input id="q" type="text" placeholder="Type your question..." />
+              <select id="method">
+                <option value="hybrid">hybrid</option>
+                <option value="keyword">keyword</option>
+                <option value="fuzzy">fuzzy</option>
+                <option value="semantic">semantic</option>
+              </select>
+              <button id="askBtn" class="btn btn-primary">Search</button>
+            </div>
+            <div id="status" class="status" aria-live="polite"></div>
+            <section id="output"></section>
           </div>
 
-          <div class="analytics-actions">
-            <button id="exportCsvBtn">Export CSV</button>
-            <button id="exportExcelBtn">Export Excel</button>
-          </div>
-
-          <div id="analyticsStatusText" class="status"></div>
-          <div class="charts-grid">
-            <div class="chart-card"><h4>Conversation Status</h4><canvas id="statusPieChart"></canvas></div>
-            <div class="chart-card"><h4>Cluster Distribution</h4><canvas id="clusterBarChart"></canvas></div>
-            <div class="chart-card"><h4>Daily Volume</h4><canvas id="dailyLineChart"></canvas></div>
-            <div class="chart-card"><h4>Top Recurring Issues</h4><canvas id="recurringChart"></canvas></div>
-          </div>
-          <div id="analyticsTable"></div>
-          <div id="analyticsDetails"></div>
-
-          <section class="insights-panel" id="section-insights">
-            <h3>Business Insights</h3>
-            <div id="insightsSummaryCards" class="insights-grid"></div>
-            <div id="insightsAutomation" class="insights-panel"></div>
-            <div id="insightsRecurring" class="insights-panel"></div>
-            <div id="insightsEmerging" class="insights-panel"></div>
-            <div id="insightsRecommendations" class="insights-panel"></div>
-          </section>
-
-          <section class="insights-panel" id="section-knowledge">
-            <h3>Knowledge Base & Continuous Learning</h3>
-            <div id="knowledgeCards" class="insights-grid"></div>
-            <div class="chart-card"><h4>Historical Knowledge Growth</h4><canvas id="knowledgeGrowthChart"></canvas></div>
-            <div id="knowledgeGrowth" class="insights-panel"></div>
-            <div class="knowledge-search">
+          <div class="section-block">
+            <h2>Knowledge Base & Continuous Learning</h2>
+            <div id="knowledgeCards" class="card-grid"></div>
+            <div class="chart-card" style="margin-top:14px;"><h4>Historical Knowledge Growth</h4><canvas id="knowledgeGrowthChart"></canvas></div>
+            <div id="knowledgeGrowth" style="margin-top:14px;"></div>
+            <div class="search-row" style="margin-top:16px;">
               <input id="knowledgeQuery" type="text" placeholder="Search knowledge base: ticket, issue text, keywords" />
               <input id="knowledgeLimit" type="number" min="1" max="50" value="10" />
-              <button id="knowledgeSearchBtn">Search KB</button>
+              <button id="knowledgeSearchBtn" class="btn btn-primary">Search</button>
             </div>
-            <div id="knowledgeSearchResults" class="insights-panel"></div>
-          </section>
+            <div id="knowledgeSearchResults" style="margin-top:14px;"></div>
+          </div>
+        </div>
 
-          <section class="insights-panel" id="section-ai">
-            <h3>Ask AI Analyst</h3>
-            <p class="upload-note">Ask natural language questions about complaints, duplicates, similar issues, clusters, and historical patterns.</p>
-            <div class="knowledge-search">
+        <!-- ---- Ask AI tab ---- -->
+        <div id="tab-ai" class="tab-panel">
+          <div class="section-block">
+            <h2>Ask AI Analyst</h2>
+            <p class="section-hint">Ask natural language questions about complaints, duplicates, similar issues, and historical patterns.</p>
+            <div class="search-row">
               <input id="aiQuestion" type="text" placeholder="What are customers complaining about most?" />
               <input id="aiTopK" type="number" min="1" max="20" value="10" />
-              <button id="aiAskBtn">Ask AI</button>
+              <button id="aiAskBtn" class="btn btn-primary">Ask AI</button>
             </div>
-            <div id="aiAnswer" class="insights-panel"></div>
-            <div id="aiMatches" class="insights-panel"></div>
-          </section>
-        </section>
-      </main>
+            <div id="aiAnswer" style="margin-top:16px;"></div>
+            <div id="aiMatches" style="margin-top:16px;"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ Conversation detail modal ============ -->
+    <div id="conversationModal" class="modal-backdrop" role="presentation">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <div class="modal-header">
+          <h3 id="modalTitle">Conversation Detail</h3>
+          <button id="modalCloseBtn" class="icon-btn" aria-label="Close conversation detail">&times;</button>
+        </div>
+        <div id="analyticsDetails" class="modal-body"></div>
       </div>
     </div>
+
     <div id="toastWrap" class="toast-wrap"></div>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 
@@ -540,12 +630,16 @@
       const statusEl = document.getElementById("status");
       const excelFileEl = document.getElementById("excelFile");
       const uploadBtn = document.getElementById("uploadBtn");
+      const uploadAnotherBtn = document.getElementById("uploadAnotherBtn");
       const uploadStatusEl = document.getElementById("uploadStatus");
       const uploadProgressBarEl = document.getElementById("uploadProgressBar");
       const uploadSummaryEl = document.getElementById("uploadSummary");
       const previewTableEl = document.getElementById("previewTable");
       const previewConversationEl = document.getElementById("previewConversation");
+      const processingStagesEl = document.getElementById("processingStages");
+      const processingErrorEl = document.getElementById("processingError");
       const kpiGridEl = document.getElementById("kpiGrid");
+      const kpiSecondaryEl = document.getElementById("kpiSecondary");
       const analyticsSearchEl = document.getElementById("analyticsSearch");
       const analyticsStatusEl = document.getElementById("analyticsStatus");
       const analyticsClusterEl = document.getElementById("analyticsCluster");
@@ -555,6 +649,7 @@
       const analyticsStatusTextEl = document.getElementById("analyticsStatusText");
       const analyticsTableEl = document.getElementById("analyticsTable");
       const analyticsDetailsEl = document.getElementById("analyticsDetails");
+      const techToggleEl = document.getElementById("techToggle");
       const exportCsvBtn = document.getElementById("exportCsvBtn");
       const exportExcelBtn = document.getElementById("exportExcelBtn");
       const insightsSummaryCardsEl = document.getElementById("insightsSummaryCards");
@@ -575,14 +670,103 @@
       const aiMatchesEl = document.getElementById("aiMatches");
       const errorBannerEl = document.getElementById("errorBanner");
       const toastWrapEl = document.getElementById("toastWrap");
+      const modalEl = document.getElementById("conversationModal");
+      const modalCloseBtn = document.getElementById("modalCloseBtn");
 
-      let charts = {
-        status: null,
-        cluster: null,
-        daily: null,
-        recurring: null,
-        knowledge: null,
-      };
+      let charts = { status: null, cluster: null, daily: null, recurring: null, knowledge: null };
+      let lastAnalyticsTableData = null;
+      let showTechnicalColumns = false;
+      let lastFocusedBeforeModal = null;
+
+      // ---------------------------------------------------------------
+      // Screen / tab controller (presentation only — no data logic here)
+      // ---------------------------------------------------------------
+      const SCREENS = ["landing", "processing", "report"];
+      function showScreen(name) {
+        SCREENS.forEach((s) => {
+          const el = document.getElementById(`screen-${s}`);
+          if (el) el.classList.toggle("active", s === name);
+        });
+        uploadAnotherBtn.style.display = name === "report" ? "inline-flex" : "none";
+      }
+
+      const TABS = ["overview", "conversations", "knowledge", "ai"];
+      function showTab(name) {
+        TABS.forEach((t) => {
+          const panel = document.getElementById(`tab-${t}`);
+          if (panel) panel.classList.toggle("active", t === name);
+          const btn = document.querySelector(`.tab-btn[data-tab="${t}"]`);
+          if (btn) {
+            btn.classList.toggle("active", t === name);
+            btn.setAttribute("aria-selected", t === name ? "true" : "false");
+          }
+        });
+        // Charts created while their tab was hidden (display:none) can end up
+        // with a zero-size canvas; resize once their tab becomes visible.
+        if (name === "overview" || name === "knowledge") {
+          Object.values(charts).forEach((c) => { if (c && c.resize) c.resize(); });
+        }
+      }
+      document.querySelectorAll(".tab-btn").forEach((btn) => {
+        btn.addEventListener("click", () => showTab(btn.dataset.tab));
+      });
+
+      function resetToLanding() {
+        showScreen("landing");
+        excelFileEl.value = "";
+        uploadStatusEl.textContent = "";
+        processingErrorEl.innerHTML = "";
+        setUploadProgress(0);
+      }
+      uploadAnotherBtn.addEventListener("click", resetToLanding);
+
+      // ---------------------------------------------------------------
+      // Processing stage simulation. The upload endpoint is a single
+      // synchronous call with no server-sent progress, so these stages
+      // (which describe the real pipeline steps) advance on a client-side
+      // timer while the request is in flight, and are force-completed the
+      // moment the real response arrives.
+      // ---------------------------------------------------------------
+      const PROCESSING_STAGES = [
+        "Reading workbook",
+        "Reconstructing conversations",
+        "Generating summaries",
+        "Extracting intents",
+        "Generating embeddings",
+        "Finding duplicates",
+        "Clustering conversations",
+        "Generating business insights",
+        "Updating knowledge base",
+        "Complete",
+      ];
+      let processingTimer = null;
+      let processingIndex = 0;
+
+      function renderProcessingStages() {
+        processingStagesEl.innerHTML = PROCESSING_STAGES.map((label, i) => {
+          const state = i < processingIndex ? "done" : i === processingIndex ? "active" : "pending";
+          return `<li class="stage ${state}"><span class="stage-icon" aria-hidden="true"></span><span>${label}</span></li>`;
+        }).join("");
+      }
+      function startProcessingSimulation() {
+        processingIndex = 0;
+        renderProcessingStages();
+        clearInterval(processingTimer);
+        processingTimer = setInterval(() => {
+          if (processingIndex < PROCESSING_STAGES.length - 2) {
+            processingIndex += 1;
+            renderProcessingStages();
+          }
+        }, 600);
+      }
+      function finishProcessingSimulation() {
+        clearInterval(processingTimer);
+        processingIndex = PROCESSING_STAGES.length;
+        renderProcessingStages();
+      }
+      function stopProcessingSimulation() {
+        clearInterval(processingTimer);
+      }
 
       function setStatus(text) { statusEl.textContent = text || ""; }
       function showErrorBanner(message) {
@@ -617,7 +801,7 @@
         const list = (data.results || []).slice(0, 5).map(
           (r) => `<li><strong>${r.question}</strong> <span class="meta">(confidence: ${Number(r.confidence || 0).toFixed(3)})</span></li>`
         ).join("");
-        output.innerHTML = `<div class="result"><p class="answer"><strong>Answer:</strong> ${top.answer}</p><p class="meta">Method: ${data.method} | Score: ${Number(data.score || 0).toFixed(3)}</p><ul class="list">${list}</ul></div>`;
+        output.innerHTML = `<div class="quick-answer-result"><p class="answer"><strong>Answer:</strong> ${top.answer}</p><p class="meta">Method: ${data.method} | Score: ${Number(data.score || 0).toFixed(3)}</p><ul class="insights-list">${list}</ul></div>`;
       }
 
       function renderUploadPreview(data) {
@@ -626,29 +810,84 @@
         const rows = (data.preview_rows || []).map((row, index) => `<tr><td>${index + 1}</td><td>${row.ticket_id || "-"}</td><td>${row.subject || "-"}</td><td>${row.message_count ?? 0}</td><td>${row.first_sent_at || "-"}</td><td>${row.last_sent_at || "-"}</td></tr>`).join("");
         previewTableEl.innerHTML = `<div class="preview-wrap"><table><thead><tr><th>#</th><th>Ticket ID</th><th>Subject</th><th>Messages</th><th>First Sent</th><th>Last Sent</th></tr></thead><tbody>${rows || "<tr><td colspan='6'>No preview rows returned.</td></tr>"}</tbody></table></div>`;
         const first = data.preview_rows?.[0];
-        previewConversationEl.innerHTML = first ? `<div class="conversation-box"><strong>Representative Conversation</strong><div style="margin-top:8px; color: var(--muted);">Ticket ID: ${first.ticket_id || "-"}</div><div style="margin-top:10px;">${first.conversation_text || ""}</div></div>` : "";
+        previewConversationEl.innerHTML = first ? `<div class="conversation-box" style="margin-top:12px;"><strong>Representative Conversation</strong><div style="margin-top:8px; color: var(--muted);">Ticket ID: ${first.ticket_id || "-"}</div><div style="margin-top:10px;">${first.conversation_text || ""}</div></div>` : "";
       }
 
-      function renderKpis(data) {
-        const kpis = [["Total Tickets", data.total_tickets], ["Total Conversations", data.total_conversations], ["Duplicate", data.duplicate_conversations], ["Similar", data.similar_conversations], ["Unique", data.unique_conversations], ["Clusters", data.total_clusters]];
-        kpiGridEl.innerHTML = kpis.map(([label, value]) => `<div class="kpi"><div class="label">${label}</div><div class="value">${value ?? 0}</div></div>`).join("");
+      function renderKpis(overview, insightsSummary, distinctIntents) {
+        const redundancy = Number(insightsSummary?.redundancy_percentage || 0);
+        const kpis = [
+          ["Total Conversations", overview.total_conversations ?? 0],
+          ["Duplicate", overview.duplicate_conversations ?? 0],
+          ["Similar", overview.similar_conversations ?? 0],
+          ["Unique", overview.unique_conversations ?? 0],
+          ["Customer Intents", distinctIntents ?? overview.total_clusters ?? 0],
+          ["Redundancy", `${redundancy.toFixed(0)}%`],
+        ];
+        kpiGridEl.innerHTML = kpis.map(([label, value]) => `<div class="kpi-card"><div class="kpi-label">${label}</div><div class="kpi-value">${value}</div></div>`).join("");
+        kpiSecondaryEl.innerHTML = `<span>Total Tickets: <strong>${overview.total_tickets ?? 0}</strong></span><span>Clusters: <strong>${overview.total_clusters ?? 0}</strong></span>`;
       }
 
       function renderAnalyticsTable(data) {
-        const rows = (data.items || []).map((row) => `<tr class="clickable-row" data-id="${row.id}"><td>${row.ticket_id}</td><td>${row.subject || "-"}</td><td><span class="badge ${row.status}">${row.status}</span></td><td>${Number(row.similarity_score || 0).toFixed(3)}</td><td><strong>${row.cluster_label || "Unlabeled"}</strong><br><span class="meta">ID ${row.cluster_id}</span></td><td>${row.nearest_ticket_id || "-"}</td><td>${(row.representative_conversation || "").slice(0, 140)}</td></tr>`).join("");
-        analyticsTableEl.innerHTML = `<div class="preview-wrap"><table><thead><tr><th>Ticket ID</th><th>Subject</th><th>Status</th><th>Similarity</th><th>Cluster</th><th>Nearest</th><th>Representative Conversation</th></tr></thead><tbody>${rows || "<tr><td colspan='7'>No data found.</td></tr>"}</tbody></table></div>`;
+        lastAnalyticsTableData = data;
+        const rows = (data.items || []).map((row) => {
+          const baseCells = `<td>${row.ticket_id}</td><td>${row.intent || "General Inquiry"}</td><td>${(row.summary || row.representative_conversation || "-").slice(0, 140)}</td><td><span class="badge ${row.status}">${row.status}</span></td><td>${Number(row.similarity_score || 0).toFixed(2)}</td><td><span class="badge priority-${row.priority || "low"}">${row.priority || "low"}</span></td>`;
+          const techCells = showTechnicalColumns
+            ? `<td>${row.subject || "-"}</td><td><strong>${row.cluster_label || "Unlabeled"}</strong><br><span class="meta">ID ${row.cluster_id}</span></td><td>${row.nearest_ticket_id || "-"}</td><td>${(row.representative_conversation || "").slice(0, 140)}</td>`
+            : "";
+          return `<tr class="clickable-row" tabindex="0" role="button" aria-label="View conversation ${row.ticket_id}" data-id="${row.id}">${baseCells}${techCells}</tr>`;
+        }).join("");
+        const techHeaders = showTechnicalColumns ? `<th>Subject</th><th>Cluster</th><th>Nearest</th><th>Representative Conversation</th>` : "";
+        const colCount = showTechnicalColumns ? 10 : 6;
+        analyticsTableEl.innerHTML = `<div class="preview-wrap"><table><thead><tr><th>Ticket ID</th><th>Intent</th><th>Summary</th><th>Status</th><th>Similarity</th><th>Priority</th>${techHeaders}</tr></thead><tbody>${rows || `<tr><td colspan='${colCount}'>No data found.</td></tr>`}</tbody></table></div>`;
         analyticsStatusTextEl.textContent = `Loaded ${data.items?.length || 0} of ${data.total || 0} rows.`;
-        Array.from(analyticsTableEl.querySelectorAll("tr.clickable-row")).forEach((tr) => tr.addEventListener("click", () => loadConversationDetail(tr.getAttribute("data-id"))));
+        Array.from(analyticsTableEl.querySelectorAll("tr.clickable-row")).forEach((tr) => {
+          tr.addEventListener("click", () => openConversationDetail(tr.getAttribute("data-id")));
+          tr.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              openConversationDetail(tr.getAttribute("data-id"));
+            }
+          });
+        });
+      }
+      techToggleEl.addEventListener("change", () => {
+        showTechnicalColumns = techToggleEl.checked;
+        if (lastAnalyticsTableData) renderAnalyticsTable(lastAnalyticsTableData);
+      });
+
+      function insightCard(title, meta, body) {
+        return `<div class="insight-card"><div class="insight-card-title">${title}</div><div class="insight-card-meta">${meta}</div><div class="insight-card-body">${body}</div></div>`;
       }
 
       function renderInsights(data) {
         const summary = data.summary || {};
-        const summaryCards = [["Redundancy", `${Number(summary.redundancy_percentage || 0).toFixed(1)}%`], ["Avg Similarity", Number(summary.average_similarity_score || 0).toFixed(3)], ["Median Similarity", Number(summary.median_similarity_score || 0).toFixed(3)], ["Avg Messages/Ticket", Number(summary.average_messages_per_ticket || 0).toFixed(2)], ["Largest Cluster", `${summary.largest_cluster?.cluster_label || "-"} (${summary.largest_cluster?.conversation_count || 0})`], ["Smallest Cluster", `${summary.smallest_cluster?.cluster_label || "-"} (${summary.smallest_cluster?.conversation_count || 0})`]];
-        insightsSummaryCardsEl.innerHTML = summaryCards.map(([label, value]) => `<div class="kpi"><div class="label">${label}</div><div class="value">${value}</div></div>`).join("");
-        insightsAutomationEl.innerHTML = `<h3>Automation Opportunities</h3><ul class="insights-list">${(data.automation_opportunities || []).map((item) => `<li><strong>${item.cluster_label}</strong> (ID ${item.cluster_id}) - ${item.conversation_count} conversations, ${Number(item.duplicate_rate || 0).toFixed(1)}% duplicate, estimated automation ${Number(item.estimated_automation_opportunity || 0).toFixed(1)}%.</li>`).join("") || "<li>No automation opportunities detected.</li>"}</ul>`;
-        insightsRecurringEl.innerHTML = `<h3>Top Recurring Issues</h3><ul class="insights-list">${(data.recurring_issues || []).map((item) => `<li><strong>${item.cluster_label}</strong> (ID ${item.cluster_id}) - ${item.conversation_count} conversations (${Number(item.percentage_of_total || 0).toFixed(1)}%), representative ticket ${item.representative_ticket || "-"}.</li>`).join("") || "<li>No recurring issues available.</li>"}</ul>`;
-        insightsEmergingEl.innerHTML = `<h3>Emerging Issues</h3><ul class="insights-list">${(data.emerging_issues || []).map((item) => item.reason === "rapid_cluster_growth" ? `<li><strong>${item.cluster_label}</strong> (ID ${item.cluster_id}) is growing rapidly: recent ${item.recent_count || 0} vs previous ${item.previous_count || 0} (${Number(item.growth_ratio || 0).toFixed(2)}x).</li>` : `<li><strong>${item.cluster_label}</strong> (ID ${item.cluster_id}) is mostly unique (${Number(item.unique_rate || 0).toFixed(1)}%), which may indicate an emerging issue.</li>`).join("") || "<li>No emerging issues detected.</li>"}</ul>`;
-        insightsRecommendationsEl.innerHTML = `<h3>Recommendations</h3><ul class="insights-list">${(data.recommendations || []).map((item) => `<li>${item}</li>`).join("") || "<li>No recommendations available.</li>"}</ul>`;
+        const summaryCards = [
+          ["Avg Similarity", Number(summary.average_similarity_score || 0).toFixed(3)],
+          ["Median Similarity", Number(summary.median_similarity_score || 0).toFixed(3)],
+          ["Avg Messages/Ticket", Number(summary.average_messages_per_ticket || 0).toFixed(2)],
+          ["Largest Cluster", `${summary.largest_cluster?.cluster_label || "-"} (${summary.largest_cluster?.conversation_count || 0})`],
+          ["Smallest Cluster", `${summary.smallest_cluster?.cluster_label || "-"} (${summary.smallest_cluster?.conversation_count || 0})`],
+        ];
+        insightsSummaryCardsEl.innerHTML = summaryCards.map(([label, value]) => `<div class="kpi-card"><div class="kpi-label">${label}</div><div class="kpi-value" style="font-size:1.2rem;">${value}</div></div>`).join("");
+
+        insightsAutomationEl.innerHTML = (data.automation_opportunities || []).map((item) =>
+          insightCard(item.cluster_label, `${item.conversation_count} conversations`, `${Number(item.duplicate_rate || 0).toFixed(0)}% duplicate rate &middot; estimated automation ${Number(item.estimated_automation_opportunity || 0).toFixed(0)}%`)
+        ).join("") || `<div class="empty-state"><div class="art">⚙️</div>No automation opportunities detected yet.</div>`;
+
+        insightsRecurringEl.innerHTML = (data.recurring_issues || []).map((item) =>
+          insightCard(item.intent || item.cluster_label, `${item.conversation_count} conversations (${Number(item.percentage_of_total || 0).toFixed(0)}%)`, `Representative ticket: ${item.representative_ticket || "-"}`)
+        ).join("") || `<div class="empty-state"><div class="art">📋</div>No recurring issues yet.</div>`;
+
+        insightsEmergingEl.innerHTML = (data.emerging_issues || []).map((item) => {
+          const body = item.reason === "rapid_cluster_growth"
+            ? `Growing rapidly: ${item.recent_count || 0} recent vs ${item.previous_count || 0} previous (${Number(item.growth_ratio || 0).toFixed(1)}x)`
+            : `Mostly unique conversations (${Number(item.unique_rate || 0).toFixed(0)}%) &mdash; may indicate a new issue.`;
+          return insightCard(item.cluster_label, `${item.conversation_count} conversations`, body);
+        }).join("") || `<div class="empty-state"><div class="art">🌱</div>No emerging issues detected.</div>`;
+
+        insightsRecommendationsEl.innerHTML = (data.recommendations || []).map((item) =>
+          `<div class="insight-card"><div class="insight-card-body">${item}</div></div>`
+        ).join("") || `<div class="empty-state"><div class="art">💡</div>No recommendations available yet.</div>`;
       }
 
       function renderOrUpdateChart(current, id, type, data) {
@@ -662,24 +901,24 @@
         const status = data.status_distribution || [];
         charts.status = renderOrUpdateChart(charts.status, "statusPieChart", "pie", { labels: status.map((x) => x.status), datasets: [{ data: status.map((x) => Number(x.count || 0)), backgroundColor: ["#ef4444", "#f59e0b", "#22c55e", "#3b82f6"] }] });
         const clusters = data.cluster_distribution || [];
-        charts.cluster = renderOrUpdateChart(charts.cluster, "clusterBarChart", "bar", { labels: clusters.map((x) => `${x.cluster_label} (#${x.cluster_id})`), datasets: [{ label: "Conversations", data: clusters.map((x) => Number(x.count || 0)), backgroundColor: "#118ab2" }] });
+        charts.cluster = renderOrUpdateChart(charts.cluster, "clusterBarChart", "bar", { labels: clusters.map((x) => `${x.cluster_label} (#${x.cluster_id})`), datasets: [{ label: "Conversations", data: clusters.map((x) => Number(x.count || 0)), backgroundColor: "#2563eb" }] });
         const daily = data.daily_volume || [];
-        charts.daily = renderOrUpdateChart(charts.daily, "dailyLineChart", "line", { labels: daily.map((x) => x.date), datasets: [{ label: "Daily Conversations", data: daily.map((x) => Number(x.count || 0)), borderColor: "#0b7a75", backgroundColor: "rgba(17,138,178,0.15)", fill: true, tension: 0.25 }] });
+        charts.daily = renderOrUpdateChart(charts.daily, "dailyLineChart", "line", { labels: daily.map((x) => x.date), datasets: [{ label: "Daily Conversations", data: daily.map((x) => Number(x.count || 0)), borderColor: "#2563eb", backgroundColor: "rgba(37,99,235,0.15)", fill: true, tension: 0.25 }] });
         const recurring = data.top_recurring_issues || [];
         charts.recurring = renderOrUpdateChart(charts.recurring, "recurringChart", "bar", { labels: recurring.map((x) => x.cluster_label), datasets: [{ label: "Count", data: recurring.map((x) => Number(x.count || 0)), backgroundColor: "#0ea5e9" }] });
       }
 
       function renderKnowledgeDashboard(data) {
         const cards = [["Total Uploads", data.total_uploads], ["Knowledge Base Size", data.knowledge_base_size], ["Known Conversations", data.known_conversations], ["New Conversations", data.new_conversations], ["New Intents", data.new_intents_discovered]];
-        knowledgeCardsEl.innerHTML = cards.map(([label, value]) => `<div class="kpi"><div class="label">${label}</div><div class="value">${value ?? 0}</div></div>`).join("");
+        knowledgeCardsEl.innerHTML = cards.map(([label, value]) => `<div class="kpi-card"><div class="kpi-label">${label}</div><div class="kpi-value" style="font-size:1.4rem;">${value ?? 0}</div></div>`).join("");
         const growth = data.historical_growth || [];
-        knowledgeGrowthEl.innerHTML = `<h3>Historical Growth</h3><ul class="insights-list">${growth.map((row) => `<li>${row.date}: +${row.new_records} (cumulative ${row.cumulative_records})</li>`).join("") || "<li>No growth data yet.</li>"}</ul>`;
-        charts.knowledge = renderOrUpdateChart(charts.knowledge, "knowledgeGrowthChart", "line", { labels: growth.map((x) => x.date), datasets: [{ label: "Knowledge Size", data: growth.map((x) => Number(x.cumulative_records || 0)), borderColor: "#0b7a75", backgroundColor: "rgba(11,122,117,0.12)", fill: true, tension: 0.25 }] });
+        knowledgeGrowthEl.innerHTML = `<ul class="insights-list">${growth.map((row) => `<li>${row.date}: +${row.new_records} (cumulative ${row.cumulative_records})</li>`).join("") || "<li>No growth data yet.</li>"}</ul>`;
+        charts.knowledge = renderOrUpdateChart(charts.knowledge, "knowledgeGrowthChart", "line", { labels: growth.map((x) => x.date), datasets: [{ label: "Knowledge Size", data: growth.map((x) => Number(x.cumulative_records || 0)), borderColor: "#2563eb", backgroundColor: "rgba(37,99,235,0.12)", fill: true, tension: 0.25 }] });
       }
 
       function renderKnowledgeSearch(data) {
         const rows = (data.items || []).map((item) => `<li><strong>${item.ticket_id}</strong> | ${item.cluster_label} (ID ${item.cluster_id}) | ${item.classification} | batch ${item.upload_batch}${item.semantic_similarity !== null && item.semantic_similarity !== undefined ? ` | semantic ${Number(item.semantic_similarity).toFixed(3)}` : ""}</li>`).join("");
-        knowledgeSearchResultsEl.innerHTML = `<h3>Knowledge Search Results</h3><ul class="insights-list">${rows || "<li>No matching knowledge records.</li>"}</ul>`;
+        knowledgeSearchResultsEl.innerHTML = `<ul class="insights-list">${rows || "<li>No matching knowledge records.</li>"}</ul>`;
       }
 
       async function loadKnowledgeDashboard() {
@@ -702,10 +941,10 @@
 
       function renderAIResult(data) {
         const sourceRows = (data.sources || []).map((s) => `<li>${s.conversation_id} | ticket ${s.ticket_id} | ${s.cluster_label} (ID ${s.cluster_id}) | batch ${s.upload_batch}${s.semantic_similarity !== null && s.semantic_similarity !== undefined ? ` | sim ${Number(s.semantic_similarity).toFixed(3)}` : ""}</li>`).join("");
-        aiAnswerEl.innerHTML = `<h3>AI Answer (${data.generation_mode || "deterministic"})</h3><div>${data.answer || "No answer available."}</div><div class="meta" style="margin-top:8px;">Confidence: ${Number(data.confidence_score || 0).toFixed(3)}</div><ul class="insights-list">${sourceRows || "<li>No sources found.</li>"}</ul>`;
+        aiAnswerEl.innerHTML = `<div class="quick-answer-result"><h3 style="margin-top:0;">AI Answer (${data.generation_mode || "deterministic"})</h3><div>${data.answer || "No answer available."}</div><div class="meta" style="margin-top:8px;">Confidence: ${Number(data.confidence_score || 0).toFixed(3)}</div><ul class="insights-list">${sourceRows || "<li>No sources found.</li>"}</ul></div>`;
         const clustersList = (data.matching_clusters || []).map((c) => `<li>${c.cluster_label} (ID ${c.cluster_id}) - ${c.conversation_count} matches</li>`).join("");
         const convosList = (data.matching_conversations || []).slice(0, 10).map((x) => `<li>${x.conversation_id} | ${x.ticket_id} | ${x.cluster_label} | ${x.classification}${x.semantic_similarity !== null && x.semantic_similarity !== undefined ? ` | semantic ${Number(x.semantic_similarity).toFixed(3)}` : ""}</li>`).join("");
-        aiMatchesEl.innerHTML = `<h3>Retrieved Context</h3><strong>Matching Clusters</strong><ul class="insights-list">${clustersList || "<li>No clusters matched.</li>"}</ul><strong>Matching Conversations</strong><ul class="insights-list">${convosList || "<li>No conversations matched.</li>"}</ul>`;
+        aiMatchesEl.innerHTML = `<div class="quick-answer-result"><h3 style="margin-top:0;">Retrieved Context</h3><strong>Matching Clusters</strong><ul class="insights-list">${clustersList || "<li>No clusters matched.</li>"}</ul><strong>Matching Conversations</strong><ul class="insights-list">${convosList || "<li>No conversations matched.</li>"}</ul></div>`;
       }
 
       async function askAIAnalyst() {
@@ -745,9 +984,39 @@
         return params.toString();
       }
 
+      function classificationReasonText(data) {
+        const pct = Math.round(Number(data.similarity_score || 0) * 100);
+        if (data.status === "duplicate") return `Marked as <strong>Duplicate</strong> &mdash; ${pct}% similar to ticket ${data.nearest_ticket_id || "another conversation"}.`;
+        if (data.status === "similar") return `Marked as <strong>Similar</strong> &mdash; ${pct}% similar to ticket ${data.nearest_ticket_id || "another conversation"}.`;
+        return `Marked as <strong>Unique</strong> &mdash; no closely matching conversation was found.`;
+      }
+
+      function keywordChips(keywords) {
+        const list = String(keywords || "").split(",").map((k) => k.trim()).filter(Boolean);
+        if (!list.length) return `<span class="meta">No keywords extracted.</span>`;
+        return list.map((k) => `<span class="chip">${k}</span>`).join("");
+      }
+
+      function openConversationDetail(id) {
+        if (!id) return;
+        lastFocusedBeforeModal = document.activeElement;
+        modalEl.classList.add("open");
+        analyticsDetailsEl.innerHTML = loadingText("Loading conversation detail...");
+        modalCloseBtn.focus();
+        loadConversationDetail(id);
+      }
+      function closeConversationDetail() {
+        modalEl.classList.remove("open");
+        if (lastFocusedBeforeModal && lastFocusedBeforeModal.focus) lastFocusedBeforeModal.focus();
+      }
+      modalCloseBtn.addEventListener("click", closeConversationDetail);
+      modalEl.addEventListener("click", (e) => { if (e.target === modalEl) closeConversationDetail(); });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && modalEl.classList.contains("open")) closeConversationDetail();
+      });
+
       async function loadConversationDetail(id) {
         if (!id) return;
-        analyticsDetailsEl.innerHTML = "";
         try {
           const res = await fetch(`/analytics/conversations/${id}`);
           const data = await res.json();
@@ -755,8 +1024,26 @@
             analyticsDetailsEl.innerHTML = `<div class="error">${data.detail || "Failed to load conversation details."}</div>`;
             return;
           }
+          document.getElementById("modalTitle").textContent = `Ticket ${data.ticket_id}`;
           const nearest = data.nearest_conversation;
-          analyticsDetailsEl.innerHTML = `<div class="details-panel"><strong>Conversation Detail</strong><div style="margin-top:8px; color: var(--muted);">Ticket ${data.ticket_id} | Status: ${data.status} | Cluster: ${data.cluster_label || "Unlabeled"} (ID ${data.cluster_id})</div><div style="margin-top:10px;"><strong>Full Conversation</strong></div><div style="margin-top:6px;">${data.conversation_text || ""}</div>${nearest ? `<div style="margin-top:12px;"><strong>Nearest Conversation</strong></div><div style="margin-top:6px; color: var(--muted);">Ticket ${nearest.ticket_id} | Status: ${nearest.status} | Cluster: ${nearest.cluster_label || "Unlabeled"} (ID ${nearest.cluster_id}) | Similarity: ${Number(nearest.similarity_score || 0).toFixed(3)}</div><div style="margin-top:6px;">${nearest.conversation_text || ""}</div>` : `<div style="margin-top:12px; color: var(--muted);">No nearest conversation found.</div>`}</div>`;
+          analyticsDetailsEl.innerHTML = `
+            <div class="detail-meta-row">
+              <span class="badge ${data.status}">${data.status}</span>
+              <span class="badge priority-${data.priority || "low"}">${data.priority || "low"} priority</span>
+              <span class="badge ${data.sentiment || "neutral"}">${data.sentiment || "neutral"}</span>
+            </div>
+            <div class="detail-block"><h4>Summary</h4><div class="body-text">${data.summary || "No summary available."}</div></div>
+            <div class="detail-block"><h4>Intent</h4><div class="body-text">${data.intent || "-"}</div></div>
+            <div class="detail-block"><h4>Category</h4><div class="body-text">${data.category || "-"}</div></div>
+            <div class="detail-block"><h4>Keywords</h4><div>${keywordChips(data.keywords)}</div></div>
+            <div class="detail-block"><h4>Reason for Classification</h4><div class="body-text">${classificationReasonText(data)}</div></div>
+            <div class="detail-block"><h4>Why This Cluster</h4><div class="body-text">${data.cluster_explanation || "-"}</div></div>
+            <div class="detail-block"><h4>Similar Conversation</h4>${nearest ? `<div class="similar-card">Ticket ${nearest.ticket_id} &middot; ${nearest.status} &middot; ${nearest.cluster_label || "Unlabeled"} &middot; similarity ${Number(nearest.similarity_score || 0).toFixed(2)}<div style="margin-top:8px; white-space:pre-wrap;">${(nearest.conversation_text || "").slice(0, 300)}</div></div>` : `<div class="meta">No similar conversation found.</div>`}</div>
+            <details class="disclosure">
+              <summary>View original conversation</summary>
+              <div class="disclosure-body"><div class="conversation-box">${data.conversation_text || ""}</div></div>
+            </details>
+          `;
         } catch (err) {
           analyticsDetailsEl.innerHTML = `<div class="error">Failed to load conversation details.</div>`;
         }
@@ -788,7 +1075,8 @@
           if (!tableRes.ok) throw new Error(table.detail || "Failed loading table");
           if (!insightsRes.ok) throw new Error(insights.detail || "Failed loading insights");
           if (!chartsRes.ok) throw new Error(chartData.detail || "Failed loading charts");
-          renderKpis(overview);
+          const distinctIntents = new Set((insights.recurring_issues || []).map((x) => x.intent || x.cluster_label).filter(Boolean)).size;
+          renderKpis(overview, insights.summary, distinctIntents);
           renderAnalyticsTable(table);
           renderInsights(insights);
           renderCharts(chartData);
@@ -805,15 +1093,15 @@
 
       async function uploadExcel() {
         const file = excelFileEl.files && excelFileEl.files[0];
-        if (!file) {
-          uploadStatusEl.innerHTML = `<div class="error">Please choose an Excel file first.</div>`;
-          return;
-        }
-        uploadBtn.disabled = true;
-        uploadStatusEl.innerHTML = loadingText("Uploading and reconstructing conversations...");
+        if (!file) return;
+
+        showScreen("processing");
+        processingErrorEl.innerHTML = "";
         uploadSummaryEl.textContent = "";
         previewTableEl.innerHTML = "";
         previewConversationEl.innerHTML = "";
+        startProcessingSimulation();
+        uploadStatusEl.innerHTML = loadingText("Uploading and reconstructing conversations...");
         setUploadProgress(8);
         try {
           const formData = new FormData();
@@ -823,20 +1111,28 @@
           setUploadProgress(75);
           const data = await res.json();
           if (!res.ok) {
-            uploadStatusEl.innerHTML = `<div class="error">${data.detail || "Upload failed."}</div>`;
+            stopProcessingSimulation();
+            uploadStatusEl.textContent = "";
+            processingErrorEl.innerHTML = `<div class="error">${data.detail || "Upload failed."}</div><button id="retryUploadBtn" class="btn btn-secondary" style="margin-top:14px;">Back to Start</button>`;
+            document.getElementById("retryUploadBtn").addEventListener("click", resetToLanding);
             showErrorBanner(data.detail || "Upload failed.");
             return;
           }
           setUploadProgress(100);
+          finishProcessingSimulation();
           uploadStatusEl.textContent = "Upload complete.";
           renderUploadPreview(data);
           await loadAnalytics();
-          showToast("Upload complete. Dashboard refreshed.");
+          showTab("overview");
+          showScreen("report");
+          showToast("Upload complete. Report is ready.");
         } catch (err) {
-          uploadStatusEl.innerHTML = `<div class="error">Network error. Ensure the API server is running.</div>`;
+          stopProcessingSimulation();
+          uploadStatusEl.textContent = "";
+          processingErrorEl.innerHTML = `<div class="error">Network error. Ensure the API server is running.</div><button id="retryUploadBtn" class="btn btn-secondary" style="margin-top:14px;">Back to Start</button>`;
+          document.getElementById("retryUploadBtn").addEventListener("click", resetToLanding);
           showErrorBanner("Upload failed. Check network and retry.");
         } finally {
-          uploadBtn.disabled = false;
           setTimeout(() => setUploadProgress(0), 900);
         }
       }
@@ -861,8 +1157,11 @@
         }
       }
 
+      uploadBtn.addEventListener("click", () => excelFileEl.click());
+      excelFileEl.addEventListener("change", () => {
+        if (excelFileEl.files && excelFileEl.files[0]) uploadExcel();
+      });
       askBtn.addEventListener("click", ask);
-      uploadBtn.addEventListener("click", uploadExcel);
       analyticsBtn.addEventListener("click", loadAnalytics);
       exportCsvBtn.addEventListener("click", () => exportAnalytics("csv"));
       exportExcelBtn.addEventListener("click", () => exportAnalytics("excel"));
@@ -879,7 +1178,7 @@
       qEl.addEventListener("keydown", (e) => { if (e.key === "Enter") ask(); });
       knowledgeSearchResultsEl.innerHTML = `<div class="empty-state"><div class="art">📈</div><div>Search your historical knowledge base to inspect learned patterns.</div></div>`;
       aiMatchesEl.innerHTML = `<div class="empty-state"><div class="art">🤖</div><div>Ask AI to retrieve relevant conversations with citations.</div></div>`;
-      loadAnalytics();
+      renderProcessingStages();
     </script>
   </body>
 </html>

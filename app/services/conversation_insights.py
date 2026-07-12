@@ -64,6 +64,10 @@ def generate_business_insights(config: InsightsConfig | None = None) -> dict[str
     df["similarity_score"] = (
         pd.to_numeric(df["similarity_score"], errors="coerce").fillna(0.0).astype(float)
     )
+    if "intent" in df.columns:
+        df["intent"] = df["intent"].fillna("").astype(str)
+    else:
+        df["intent"] = ""
 
     total = int(len(df))
     duplicate_count = int((df["status"] == "duplicate").sum())
@@ -157,35 +161,55 @@ def _cluster_statistics(df: pd.DataFrame) -> dict[str, dict[str, Any] | None]:
 
 
 def _build_recurring_issues(df: pd.DataFrame) -> list[dict[str, Any]]:
+    """Group recurring issues by customer intent (falling back to cluster label for
+    legacy rows with no intent recorded), instead of raw cluster wording."""
     total = max(int(len(df)), 1)
+
+    work = df.copy()
+    work["group_key"] = work["intent"].str.strip()
+    work.loc[work["group_key"] == "", "group_key"] = work["cluster_label"]
+
     grouped = (
-        df.groupby(["cluster_id", "cluster_label"], as_index=False)
+        work.groupby("group_key", as_index=False)
         .size()
         .rename(columns={"size": "conversation_count"})
-        .sort_values(by=["conversation_count", "cluster_id"], ascending=[False, True])
+        .sort_values(by=["conversation_count", "group_key"], ascending=[False, True])
         .head(10)
     )
 
     issues: list[dict[str, Any]] = []
     for _, row in grouped.iterrows():
-        cluster_id = int(row["cluster_id"])
-        cluster_df = df[df["cluster_id"] == cluster_id].copy()
-        cluster_df = cluster_df.sort_values(
+        group_key = row["group_key"]
+        group_df = work[work["group_key"] == group_key].copy()
+
+        representative_cluster = (
+            group_df["cluster_id"].value_counts().idxmax()
+            if not group_df.empty
+            else 0
+        )
+        cluster_df = group_df[group_df["cluster_id"] == representative_cluster]
+        representative_label = (
+            str(cluster_df.iloc[0]["cluster_label"]) if not cluster_df.empty else ""
+        )
+
+        ranked = group_df.sort_values(
             by=["similarity_score", "message_count", "ticket_id"],
             ascending=[False, False, True],
         )
         representative_ticket = (
-            str(cluster_df.iloc[0]["ticket_id"]) if not cluster_df.empty else ""
+            str(ranked.iloc[0]["ticket_id"]) if not ranked.empty else ""
         )
 
         count = int(row["conversation_count"])
+        intent_value = group_df.iloc[0]["intent"].strip() if not group_df.empty else ""
         issues.append(
             {
-                "cluster_id": cluster_id,
-                "cluster_label": str(row["cluster_label"]),
+                "cluster_id": int(representative_cluster),
+                "cluster_label": representative_label,
                 "conversation_count": count,
                 "percentage_of_total": round((count / total) * 100.0, 2),
                 "representative_ticket": representative_ticket,
+                "intent": intent_value or None,
             }
         )
 

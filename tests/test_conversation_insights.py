@@ -174,3 +174,61 @@ def test_generate_business_insights_empty(monkeypatch):
     assert data["automation_opportunities"] == []
     assert data["emerging_issues"] == []
     assert data["recommendations"]
+
+
+INTENT_ROWS = [
+    {**row, "intent": "Password Reset" if row["cluster_id"] == 10 else ""}
+    for row in SAMPLE_ROWS
+    if row["cluster_id"] in (10, 20)
+] + [
+    {
+        "id": 7,
+        "ticket_id": "T-400",
+        "subject": "Login help",
+        "status": "similar",
+        "similarity_score": 0.85,
+        "nearest_ticket_id": "T-100",
+        "cluster_id": 40,
+        "cluster_label": "Login Help",
+        "message_count": 2,
+        "first_sent_at": "2026-07-06T10:00:00",
+        "last_sent_at": "2026-07-06T10:00:00",
+        "representative_conversation": "...",
+        "conversation_text": "...",
+        "intent": "Password Reset",
+    },
+]
+
+
+def test_recurring_issues_group_by_intent_over_cluster_label(monkeypatch):
+    def fake_overview():
+        return {
+            "total_tickets": len(INTENT_ROWS),
+            "total_conversations": len(INTENT_ROWS),
+            "duplicate_conversations": 0,
+            "similar_conversations": 0,
+            "unique_conversations": 0,
+            "total_clusters": 3,
+        }
+
+    def fake_list(limit=100, offset=0, **kwargs):
+        items = INTENT_ROWS[offset : offset + limit]
+        return {"total": len(INTENT_ROWS), "items": items}
+
+    monkeypatch.setattr(
+        "app.services.conversation_insights.get_analytics_overview", fake_overview
+    )
+    monkeypatch.setattr(
+        "app.services.conversation_insights.list_conversations", fake_list
+    )
+
+    data = generate_business_insights()
+
+    # Cluster 10 ("Password Reset" label, 3 rows) and cluster 40 ("Login Help"
+    # label, 1 row) both carry intent "Password Reset" -- they must merge into
+    # a single recurring-issue group of 4, instead of two separate groups of
+    # 3 and 1 keyed off raw cluster label.
+    password_group = next(
+        item for item in data["recurring_issues"] if item["intent"] == "Password Reset"
+    )
+    assert password_group["conversation_count"] == 4

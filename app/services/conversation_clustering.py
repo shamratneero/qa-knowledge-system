@@ -40,7 +40,8 @@ def cluster_conversations(
         return conversations_df.copy()
 
     df = conversations_df.copy()
-    texts = [str(x) for x in df["conversation_text"].tolist()]
+    text_col = "embedding_text" if "embedding_text" in df.columns else "conversation_text"
+    texts = [str(x) for x in df[text_col].tolist()]
 
     if len(texts) == 1:
         df["cluster_id"] = [0]

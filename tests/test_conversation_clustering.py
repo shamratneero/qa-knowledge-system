@@ -43,3 +43,35 @@ def test_cluster_assignments(monkeypatch):
     assert "cluster_id" in out.columns
     assert "cluster_label" in out.columns
     assert cluster_count(out) >= 2
+
+
+def test_cluster_prefers_embedding_text_when_present(monkeypatch):
+    df = pd.DataFrame(
+        {
+            "ticket_id": ["1", "2", "3"],
+            "conversation_text": ["Hi", "Hello", "booking issue"],
+            "embedding_text": [
+                "Customer greeted the agent. Intent: General Inquiry.",
+                "Customer greeted the agent. Intent: General Inquiry.",
+                "Customer has a booking issue. Intent: Booking Inquiry.",
+            ],
+        }
+    )
+
+    class FakeModel:
+        def encode(self, texts, show_progress_bar=False):
+            vectors = []
+            for text in texts:
+                if "General Inquiry" in text:
+                    vectors.append([1.0, 0.0, 0.0])
+                else:
+                    vectors.append([0.0, 1.0, 0.0])
+            return vectors
+
+    monkeypatch.setattr(
+        "app.services.conversation_clustering._get_model", lambda: FakeModel()
+    )
+
+    out = cluster_conversations(df, min_cluster_similarity=0.9, min_samples=2)
+    assert out.loc[0, "cluster_id"] == out.loc[1, "cluster_id"]
+    assert out.loc[2, "cluster_id"] != out.loc[0, "cluster_id"]

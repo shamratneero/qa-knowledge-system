@@ -110,6 +110,12 @@ def save_conversations_to_db(
                     ),
                     cluster_id=int(row.get("cluster_id", 0)),
                     cluster_label=str(row.get("cluster_label", "Cluster 0")),
+                    summary=str(row.get("summary", "") or ""),
+                    intent=str(row.get("intent", "") or ""),
+                    keywords=str(row.get("keywords", "") or ""),
+                    category=str(row.get("category", "") or ""),
+                    sentiment=str(row.get("sentiment", "neutral") or "neutral"),
+                    priority=str(row.get("priority", "low") or "low"),
                     is_active=True,
                 )
             )
@@ -167,6 +173,90 @@ def _ensure_conversation_schema() -> None:
             conn.execute(
                 text(
                     "ALTER TABLE conversation_threads ADD COLUMN cluster_label VARCHAR(100) NOT NULL DEFAULT 'Cluster 0'"
+                )
+            )
+        if "summary" not in existing:
+            conn.execute(
+                text(
+                    "ALTER TABLE conversation_threads ADD COLUMN summary TEXT NOT NULL DEFAULT ''"
+                )
+            )
+        if "intent" not in existing:
+            conn.execute(
+                text(
+                    "ALTER TABLE conversation_threads ADD COLUMN intent VARCHAR(120) NOT NULL DEFAULT ''"
+                )
+            )
+        if "keywords" not in existing:
+            conn.execute(
+                text(
+                    "ALTER TABLE conversation_threads ADD COLUMN keywords VARCHAR(500) NOT NULL DEFAULT ''"
+                )
+            )
+        if "category" not in existing:
+            conn.execute(
+                text(
+                    "ALTER TABLE conversation_threads ADD COLUMN category VARCHAR(100) NOT NULL DEFAULT ''"
+                )
+            )
+        if "sentiment" not in existing:
+            conn.execute(
+                text(
+                    "ALTER TABLE conversation_threads ADD COLUMN sentiment VARCHAR(20) NOT NULL DEFAULT 'neutral'"
+                )
+            )
+        if "priority" not in existing:
+            conn.execute(
+                text(
+                    "ALTER TABLE conversation_threads ADD COLUMN priority VARCHAR(20) NOT NULL DEFAULT 'low'"
+                )
+            )
+
+
+def _ensure_knowledge_conversation_schema() -> None:
+    """Apply minimal schema upgrades for knowledge_conversations on existing SQLite DBs."""
+    with engine.begin() as conn:
+        existing = {
+            row[1]
+            for row in conn.execute(text("PRAGMA table_info(knowledge_conversations)"))
+        }
+        if not existing:
+            return
+
+        if "summary" not in existing:
+            conn.execute(
+                text(
+                    "ALTER TABLE knowledge_conversations ADD COLUMN summary TEXT NOT NULL DEFAULT ''"
+                )
+            )
+        if "intent" not in existing:
+            conn.execute(
+                text(
+                    "ALTER TABLE knowledge_conversations ADD COLUMN intent VARCHAR(120) NOT NULL DEFAULT ''"
+                )
+            )
+        if "keywords" not in existing:
+            conn.execute(
+                text(
+                    "ALTER TABLE knowledge_conversations ADD COLUMN keywords VARCHAR(500) NOT NULL DEFAULT ''"
+                )
+            )
+        if "category" not in existing:
+            conn.execute(
+                text(
+                    "ALTER TABLE knowledge_conversations ADD COLUMN category VARCHAR(100) NOT NULL DEFAULT ''"
+                )
+            )
+        if "sentiment" not in existing:
+            conn.execute(
+                text(
+                    "ALTER TABLE knowledge_conversations ADD COLUMN sentiment VARCHAR(20) NOT NULL DEFAULT 'neutral'"
+                )
+            )
+        if "priority" not in existing:
+            conn.execute(
+                text(
+                    "ALTER TABLE knowledge_conversations ADD COLUMN priority VARCHAR(20) NOT NULL DEFAULT 'low'"
                 )
             )
 

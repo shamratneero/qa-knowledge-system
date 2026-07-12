@@ -28,7 +28,7 @@ class TestHealth:
         response = client.get("/ui")
         assert response.status_code == 200
         assert "text/html" in response.headers.get("content-type", "")
-        assert "Ask the Knowledge Base" in response.text
+        assert "Upload Conversation Excel" in response.text
 
     def test_request_id_header_added(self, client):
         response = client.get("/health")

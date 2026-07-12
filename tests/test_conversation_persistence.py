@@ -58,3 +58,42 @@ def test_save_conversations_to_db_replaces_existing_rows():
         assert rows[0].ticket_id == "200"
     finally:
         session.close()
+
+
+def test_save_conversations_to_db_persists_summary_fields():
+    engine = create_engine(
+        "sqlite:///:memory:", connect_args={"check_same_thread": False}
+    )
+    Base.metadata.create_all(bind=engine)
+    Session = sessionmaker(bind=engine)
+
+    session = Session()
+    try:
+        df = pd.DataFrame(
+            {
+                "ticket_id": ["105"],
+                "subject": ["Password reset"],
+                "message_count": [3],
+                "first_sent_at": [pd.NaT],
+                "last_sent_at": [pd.NaT],
+                "conversation_text": ["Guest: I forgot my password"],
+                "summary": ["Customer reported: I forgot my password."],
+                "intent": ["Password Reset"],
+                "keywords": ["password, login"],
+                "category": ["Authentication"],
+                "sentiment": ["negative"],
+                "priority": ["high"],
+            }
+        )
+
+        save_conversations_to_db(df, source_file="sample.xlsx", db=session)
+
+        row = session.query(ConversationThread).first()
+        assert row.summary == "Customer reported: I forgot my password."
+        assert row.intent == "Password Reset"
+        assert row.keywords == "password, login"
+        assert row.category == "Authentication"
+        assert row.sentiment == "negative"
+        assert row.priority == "high"
+    finally:
+        session.close()

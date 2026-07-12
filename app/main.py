@@ -43,6 +43,7 @@ from app.services.conversation_ingestion import (
     reconstruct_conversations,
     summarize_conversation_upload,
 )
+from app.services.conversation_summary import summarize_conversations
 from app.services.conversation_classification import (
     classify_conversations,
     classification_counts,
@@ -508,7 +509,8 @@ async def upload_conversations_excel(
             content, file_name=sanitized_name
         )
         reconstructed = reconstruct_conversations(source_df)
-        classified = classify_conversations(reconstructed)
+        summarized = summarize_conversations(reconstructed)
+        classified = classify_conversations(summarized)
         clustered = cluster_conversations(classified)
         labeled = assign_cluster_labels(clustered)
         counts = classification_counts(labeled)
@@ -559,6 +561,12 @@ async def upload_conversations_excel(
                 else row["last_sent_at"].isoformat()
             ),
             conversation_text=str(row["conversation_text"]),
+            summary=str(row.get("summary", "") or ""),
+            intent=str(row.get("intent", "") or ""),
+            keywords=str(row.get("keywords", "") or ""),
+            category=str(row.get("category", "") or ""),
+            sentiment=str(row.get("sentiment", "neutral") or "neutral"),
+            priority=str(row.get("priority", "low") or "low"),
         )
         for _, row in preview_df.iterrows()
     ]

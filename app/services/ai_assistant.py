@@ -189,6 +189,9 @@ def _generate_with_optional_llm(question: str, context: dict[str, Any]) -> str |
                     "cluster_label": x.get("cluster_label"),
                     "classification": x.get("classification"),
                     "semantic_similarity": x.get("semantic_similarity"),
+                    "summary": x.get("summary"),
+                    "intent": x.get("intent"),
+                    "category": x.get("category"),
                 }
                 for x in context.get("matching_conversations", [])[:10]
             ],

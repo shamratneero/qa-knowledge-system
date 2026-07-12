@@ -98,3 +98,61 @@ def test_knowledge_similar_and_dashboard(monkeypatch):
     assert dashboard["total_uploads"] == 1
     assert dashboard["knowledge_base_size"] == 3
     assert isinstance(dashboard["historical_growth"], list)
+
+
+def test_ingest_stores_summary_fields_and_embeds_off_embedding_text(monkeypatch):
+    engine = create_engine(
+        "sqlite:///:memory:", connect_args={"check_same_thread": False}
+    )
+    Base.metadata.create_all(bind=engine)
+    Session = sessionmaker(bind=engine)
+
+    class DirectionalFakeModel:
+        """Encodes along different axes depending on content, so cosine
+        similarity actually reveals which text column was embedded."""
+
+        def encode(self, texts, show_progress_bar=False):
+            vectors = []
+            for text in texts:
+                if "password" in str(text).lower():
+                    vectors.append([1.0, 0.0, 0.0])
+                else:
+                    vectors.append([0.0, 1.0, 0.0])
+            return vectors
+
+    monkeypatch.setattr(knowledge_base, "SessionLocal", Session)
+    monkeypatch.setattr(knowledge_base, "_get_model", lambda: DirectionalFakeModel())
+
+    df = pd.DataFrame(
+        {
+            "ticket_id": ["T1"],
+            "subject": ["Password reset"],
+            "conversation_text": ["Hi"],
+            "embedding_text": ["Customer forgot their password. Intent: Password Reset."],
+            "cluster_id": [1],
+            "cluster_label": ["Password"],
+            "summary": ["Customer forgot their password."],
+            "intent": ["Password Reset"],
+            "keywords": ["password, login"],
+            "category": ["Authentication"],
+            "sentiment": ["negative"],
+            "priority": ["high"],
+        }
+    )
+
+    knowledge_base.ingest_conversations_to_knowledge_base(df, upload_batch="batch_x")
+
+    results = knowledge_base.search_knowledge_base(keywords="password", limit=10)
+    assert results["total"] == 1
+    item = results["items"][0]
+    assert item["summary"] == "Customer forgot their password."
+    assert item["intent"] == "Password Reset"
+    assert item["category"] == "Authentication"
+    assert item["sentiment"] == "negative"
+    assert item["priority"] == "high"
+
+    # "Hi" (raw conversation_text) does not contain "password" and would embed
+    # along a different axis -- similarity to a "password" query only stays
+    # 1.0 if embedding_text (which contains "password") is what was embedded.
+    semantic = knowledge_base.search_knowledge_base(query="password", limit=10)
+    assert semantic["items"][0]["semantic_similarity"] == 1.0

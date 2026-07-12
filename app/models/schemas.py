@@ -135,6 +135,12 @@ class ConversationPreviewRow(BaseModel):
     first_sent_at: Optional[str] = None
     last_sent_at: Optional[str] = None
     conversation_text: str
+    summary: str = ""
+    intent: str = ""
+    keywords: str = ""
+    category: str = ""
+    sentiment: str = "neutral"
+    priority: str = "low"
 
 
 class ConversationImportReport(BaseModel):
@@ -189,6 +195,12 @@ class ConversationTableRow(BaseModel):
     last_sent_at: Optional[str] = None
     representative_conversation: str
     conversation_text: str
+    summary: str = ""
+    intent: str = ""
+    keywords: str = ""
+    category: str = ""
+    sentiment: str = "neutral"
+    priority: str = "low"
 
 
 class ConversationTableResponse(BaseModel):
@@ -224,13 +236,14 @@ class InsightsSummary(BaseModel):
 
 
 class RecurringIssue(BaseModel):
-    """Recurring issue entry derived from clusters."""
+    """Recurring issue entry derived from clusters, grouped by customer intent."""
 
     cluster_id: int
     cluster_label: str
     conversation_count: int
     percentage_of_total: float
     representative_ticket: str
+    intent: Optional[str] = None
 
 
 class AutomationOpportunity(BaseModel):
@@ -282,6 +295,12 @@ class KnowledgeSearchRow(BaseModel):
     upload_batch: str
     upload_timestamp: Optional[str] = None
     semantic_similarity: Optional[float] = None
+    summary: str = ""
+    intent: str = ""
+    keywords: str = ""
+    category: str = ""
+    sentiment: str = "neutral"
+    priority: str = "low"
 
 
 class KnowledgeSearchResponse(BaseModel):

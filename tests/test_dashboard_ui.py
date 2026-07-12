@@ -8,8 +8,13 @@ def test_ui_contains_saas_dashboard_sections(client):
     assert response.status_code == 200
     html = response.text
 
-    assert "Conversation Analytics Dashboard" in html
-    assert "Business Insights" in html
+    # Landing screen (guided flow entry point).
+    assert "Upload Conversation Excel" in html
+    # Report screen sections (business insights, now presented as cards).
+    assert "Top Customer Issues" in html
+    assert "Automation Opportunities" in html
+    assert "Emerging Issues" in html
+    assert "Explore Conversations" in html
     assert "Knowledge Base & Continuous Learning" in html
     assert "Ask AI Analyst" in html
 
