@@ -119,3 +119,87 @@ Intent and category are drawn from a fixed, rule-derived vocabulary (`_INTENT_RU
 - **Follow-up: Intent filter added to the Conversations explorer.** A new `intent` dropdown (populated from `GET /analytics/intents`, a new read-only endpoint listing distinct intents currently in the dataset) sits next to the existing Status filter, wired into `list_conversations`/`export_conversations`/the CSV and Excel export routes exactly like the existing `status`/`cluster_id` filters — same pattern, fully additive, no existing filter behavior changed.
 - End-to-end reproduction of the exact reported bug: a 9-conversation fixture with speaker names, email/phone PII, and `"Thanks, Jackie"`/`"Regards, Roger"`-style sign-offs, run through the real upload pipeline. Resulting cluster labels: `"Password Reset"`, `"Refund Request"`, `"General Inquiry"`, `"Booking Inquiry"` — no name, greeting, or PII anywhere in any label, summary, or Emerging Issues card. Verified via direct API inspection and a Playwright screenshot of the rendered dashboard (zero console errors).
 - Confirmed a lone low-priority, non-growing conversation no longer appears in `emerging_issues` (direct regression test for the noise bug), while a single high-priority conversation and a 3-conversation recurring group both correctly qualify via their respective rules.
+
+---
+
+# Milestone 3: Authentication & Registration Layer (Single Admin Account)
+
+## 1. What changed
+
+The app previously had zero authentication — every API route and the dashboard were open to anyone. This milestone adds a login/registration layer in front of everything, for a single admin account model (registration creates the one account, then closes itself).
+
+**Backend:**
+- New `User` model (`app/models/database.py`) — `username`, `password_hash`, `created_at`, `is_active`. New table, auto-created via the existing `init_db()`/`Base.metadata.create_all()` path; no migration needed.
+- New `app/core/security.py`: password hashing via PBKDF2-HMAC-SHA256 (stdlib `hashlib`, random per-user salt, 260,000 iterations — no new dependency), JWT creation/verification via `PyJWT` (the one new dependency added — a small, single-purpose, widely-audited library, used rather than hand-rolling token signing for security-critical code), and a `get_current_user` FastAPI dependency.
+- New `app/services/auth.py`: `register_user` (raises if an account already exists — enforces the single-admin-account model), `authenticate_user`, `user_count`.
+- New `app/api/auth.py` router (the previously-empty `app/api/` package now has a real purpose): `POST /auth/register`, `POST /auth/login`, `GET /auth/status` (public — tells the frontend whether to show a login or registration form), `GET /auth/me`.
+- **Enforcement**: a single `@app.middleware("http")` function in `app/main.py` with a small public-path allowlist (`/`, `/health`, `/ui`, `/docs`, `/redoc`, `/openapi.json`, `/auth/register`, `/auth/login`, `/auth/status`) — every other route requires a valid `Authorization: Bearer` token. One choke point instead of decorating ~25 existing route functions individually, so **zero existing route signatures changed**, and an allowlist (rather than a denylist) means nothing can be accidentally left unprotected.
+- `.env`'s already-present-but-commented-out JWT scaffold (`SECRET_KEY`, `ALGORITHM`, `ACCESS_TOKEN_EXPIRE_MINUTES`) is now active with a real generated key, matching the exact names that were already anticipated there. If `SECRET_KEY` isn't set, `Settings` generates a random one at process start and logs a warning that sessions will be invalidated on restart — a safe default (no shared hardcoded secret) rather than a silent footgun.
+
+**Frontend (`app/static/index.html`):**
+- New `screen-auth`, shown first. Fetches `GET /auth/status` on load: no account yet → registration form only; account exists → login form only (no toggle, since registration is genuinely closed) unless a valid token is already in `localStorage` (checked via `/auth/me`), in which case it's skipped entirely. Styled with the same rounded-card/`.btn-primary` design system already established for the rest of the dashboard — no new visual language needed.
+- A single `window.fetch` override near the top of the script attaches `Authorization: Bearer <token>` to same-origin requests automatically, and redirects back to the login screen on any `401` — meaning **none of the ~15 pre-existing `fetch(...)` call sites elsewhere in the file needed to change**.
+- Top bar gains a "Welcome, {username}" greeting and a Log out button.
+- **Export CSV/Excel fix**: these previously triggered via `window.location.href = ...` navigation, which cannot carry a custom header — under the new auth scheme that would have silently broken a working feature. Switched to `fetch()` + blob + a temporary `<a download>` link, preserving the feature instead.
+
+**Tests**: the shared `client` fixture in `tests/conftest.py` now transparently registers (idempotently, against the shared test DB) and logs in a fixed test account, attaching the bearer token — so **all 96 pre-existing tests kept passing completely unmodified**, since they already all go through this one fixture. A plain `unauthenticated_client` fixture was added for testing the auth boundary itself. New `tests/test_auth.py` covers the register → login → `/auth/me` happy path, the second-registration-is-rejected rule, wrong-password rejection, protected-route-without-token (401) vs with-token (200), and that public routes stay reachable without a token.
+
+## 2. Why this is safe by construction, not by discipline
+
+The middleware-allowlist approach means protection is the default for every route, including any added in the future — a developer has to explicitly add a new path to the allowlist to make it public, rather than remembering to add `Depends(get_current_user)` to every new protected route. This is a stronger guarantee than per-route annotation, which is easy to forget on just one route.
+
+## 3. Known, pre-existing risk flagged but not addressed in this pass
+
+Several dashboard render functions already interpolate data (conversation text, summaries) into `innerHTML` without escaping. Combined with a `localStorage`-held token, a stored-XSS bug elsewhere would be more dangerous (token theft) than before this milestone. This is a separate, broader cleanup across many render functions — out of scope here, flagged for a future pass if wanted.
+
+## Verification performed
+
+- `pytest` — 109/109 passed (8 new tests in `test_auth.py`; the `conftest.py` fixture change is exercised implicitly by all other tests, which is itself the strongest proof it didn't break anything).
+- Live end-to-end via `curl` and Playwright against the real SQLite database: confirmed a protected route (`/analytics/overview`) returns `401` with no token and `200` with a valid one; confirmed a second registration attempt returns `403 "Registration is closed"`; confirmed wrong-password login returns `401` and renders an inline error; confirmed successful login shows "Welcome, test-admin" and persists across a page refresh (token in `localStorage`); confirmed Log out returns to the sign-in screen; confirmed Export CSV still triggers a real browser download (via Playwright's `expect_download`) under the new auth scheme. Zero browser console errors throughout (aside from the browser's own native logging of the intentional wrong-password 401).
+
+---
+
+# Milestone 4: Liquid Glass Redesign + Full Production Audit
+
+## Part A — Liquid Glass visual redesign
+
+**What changed.** `app/static/index.html`'s entire visual surface was re-skinned to an Apple-style "liquid glass" material system, CSS-only — no HTML structure, element IDs, or JS logic changed:
+
+- A fixed ambient gradient-mesh backdrop (`body::before`, four soft radial-gradient blobs in blue/violet/pink) gives every glass panel something to refract against.
+- A shared `--blur: blur(20px) saturate(160%)` token (+ `-webkit-` prefix) applied to every card-like surface — KPI/insight/chart cards, the filter bar, table wrapper, topbar, tabs area, modal, disclosure, auth/landing cards, toasts/banners — each with a translucent `rgba(255,255,255,…)` background, a light rim border, and an `inset 0 1px 0 rgba(255,255,255,0.85)` highlight simulating light catching the top edge of glass (the signature "liquid glass" cue, replacing flat drop shadows).
+- Corner radii increased (14→22px / 20→28px) for the softer "liquid" edge feel; the primary button became a blue→violet gradient with the same specular highlight; secondary buttons and form inputs became glass themselves instead of flat white.
+- The modal backdrop now blurs the app content behind it (`backdrop-filter: blur(4px)` on the dark overlay) rather than just darkening it.
+- `@supports not (backdrop-filter: blur(1px))` fallback swaps every glass panel to a solid near-opaque background for browsers without blur support, so text never becomes illegible.
+- Responsive breakpoints extended from two (860/520px) to three (900/640/420px), reviewed across every screen: KPI grid steps down to 2 then 1 column, the auth/landing card padding shrinks, chart canvases shrink slightly, and the topbar wraps its action buttons — verified with real Playwright screenshots at 1400px/768px/390px, not just written and assumed.
+
+**A real bug found and fixed along the way (not a CSS issue — a pre-existing JS ordering bug the new visual pass surfaced):** the "Conversation Status" pie chart rendered blank after every upload. Root cause: `uploadExcel()` called `showTab("overview")` *before* `showScreen("report")`, so the tab's chart-resize-on-show logic ran while the report screen (and its canvas) was still `display:none`. Fixed by swapping the call order — screen must be visible before a tab's charts are resized into it. Verified via Chart.js's own `Chart.getChart()` API showing correct data both before and after, and a screenshot showing the pie chart rendering correctly post-fix.
+
+**Verification:** full `pytest` suite (109/109, unaffected as expected for a CSS/one-line-JS-reorder change) run twice (once after the CSS pass, once after the chart fix); Playwright screenshots across auth/landing/report-overview/conversations-modal at desktop/tablet/mobile widths, zero console errors.
+
+## Part B — Full production audit and hardening
+
+Prompted by "cross check everything and prepare for deployment." Went beyond just running the repo's existing `make preflight` script (which needs a Docker daemon not available in this environment) to review this session's cumulative changes — especially the new auth/DB layer — for production concerns. Findings, in order of severity:
+
+1. **Critical: the real SQLite database was tracked in git, and Docker was about to bake it into every image.** `data/knowledge.db` (54MB, containing the `test-admin` account created during this session's testing plus a large amount of test conversation data) was committed to git across 4 historical commits despite being listed in `.gitignore` (a classic gotcha — adding a path to `.gitignore` doesn't untrack a file that was already tracked before the rule existed). Separately, `.dockerignore` never had a matching rule at all, so `Dockerfile`'s `COPY data/ data/` would have shipped that same test-polluted database — test credentials included — into every built image, and would have made the single-admin-account registration flow appear "already closed" for any real deployer.
+   - **Fixed, safely:** added `data/*.db` / `data/*.sqlite3` to `.dockerignore` (the app creates a fresh empty DB automatically via the existing `init_db()` path, so nothing else was needed there). Ran `git rm --cached data/knowledge.db` — this stops the file from being tracked *going forward* only; it does **not** touch git history, does not delete the local file (still present on disk, still usable for local dev), and is trivially reversible (`git add data/knowledge.db` undoes it). Nothing was committed — that's left for you.
+   - **Flagged, not fixed:** the file still exists in the *history* of 4 past commits on the `origin` remote (`github.com/shamratneero/qa-knowledge-system`). Purging it from history would require a destructive, irreversible rewrite (`git filter-repo` or BFG) plus a force-push, which affects anyone who's cloned the repo — that's your call to make, not something to do unilaterally. If the repo is private and you're the only clone, low urgency; if it's public or shared, worth doing.
+
+2. **CI would have failed outright.** The repo's `ci.yml` runs `black --check` and `ruff check` on every push/PR. None of this session's new/edited Python files had been run through either formatter. Fixed: `black app tests` (15 files, whitespace-only, verified with a full pytest re-run afterward) and cleaned up two unused imports `ruff` flagged in `test_auth.py`. Both now pass clean.
+
+3. **The existing smoke-test script would have failed post-deploy.** `scripts/run/smoke_test.sh` called `POST /ask` expecting a `200` with an answer — but `/ask` is now a protected route, so it would get a `401`. Rather than baking test credentials into a deployment smoke-test script (an anti-pattern), the check was changed to assert the *auth boundary itself* — confirming `/ask` correctly returns `401` without a token, plus a new check on the public `/auth/status` endpoint. Re-ran the script live against the app; passes.
+
+4. **`SECRET_KEY` had no deployment story.** The app already logs a warning and auto-generates an ephemeral key if `SECRET_KEY` isn't set (built in during the auth milestone), but nothing enforced or documented setting it for real deployments — silently shipping with a key that regenerates (and invalidates every session) on every container restart is a bad default to fall into by accident.
+   - `docker-compose.yml`: `SECRET_KEY` is now `${SECRET_KEY:?Set SECRET_KEY in your shell/secrets manager before running docker compose up}` — `docker compose` now refuses to start without it. (Verified via `docker compose config` with and without the var set — Compose also auto-loads the repo's local, gitignored `.env`, which already has a real key from the earlier auth milestone, so local `docker compose up` keeps working out of the box.)
+   - `render.yaml`: added `SECRET_KEY` as `sync: false` (Render's documented pattern for "must be set manually in the dashboard," so it's never committed as a real value).
+   - `README.md`: new **Authentication** section documenting the single-admin-account model, the public-route allowlist, and the full `/auth/*` flow (this was entirely undocumented before — a genuine gap, since every route in the API changed behavior this session); Configuration/Docker sections updated with `SECRET_KEY`/`ALGORITHM`/`ACCESS_TOKEN_EXPIRE_MINUTES` and an explicit warning about the ephemeral-key behavior.
+
+5. **Verified, no change needed:** `FastAPI(...)` is never constructed with `debug=True` (traceback pages stay off); auth error responses (`401`/`403`) return minimal, non-leaking detail strings; CORS is wildcard (`cors_origins: ["*"]`) but the app authenticates via `Authorization: Bearer` header (not cookies), so a malicious cross-origin page has no ambient way to attach a victim's token even with permissive CORS — real risk is low for this deployment shape (same-origin `/ui` frontend); worth tightening to a specific origin only if a separate frontend domain is ever added, noted but not changed since the actual production domain isn't known yet.
+
+## Verification performed (Milestone 4)
+
+- `pytest` — 109/109 passed, re-run after every change in this milestone (CSS pass, chart-order fix, black reformat, lint cleanup).
+- `black --check app tests` and `ruff check app tests` — both clean (previously would have failed CI).
+- `docker compose config` — validated twice (with `SECRET_KEY` set and unset) to confirm the new required-variable guard behaves correctly.
+- `bash scripts/run/smoke_test.sh` — run live against the app; all 5 steps pass, including the new 401-boundary check on `/ask`.
+- Playwright screenshots across desktop/tablet/mobile confirming the redesign renders correctly with zero console errors, plus the pie-chart fix confirmed via `Chart.getChart()` inspection and a follow-up screenshot.
+- `git status` reviewed before and after the `git rm --cached` — confirmed only the intended change staged, nothing committed.

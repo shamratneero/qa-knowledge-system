@@ -40,7 +40,9 @@ def classify_conversations(
         return conversations_df.copy()
 
     df = conversations_df.copy()
-    text_col = "embedding_text" if "embedding_text" in df.columns else "conversation_text"
+    text_col = (
+        "embedding_text" if "embedding_text" in df.columns else "conversation_text"
+    )
     texts = [str(x) for x in df[text_col].tolist()]
     ticket_ids = [str(x) for x in df["ticket_id"].tolist()]
 

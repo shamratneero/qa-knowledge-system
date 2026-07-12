@@ -6,23 +6,30 @@
     <title>Conversation Intelligence</title>
     <style>
       :root {
-        --bg: #f7f9fc;
-        --card: #ffffff;
+        --bg-base: #eef1fb;
+        --card: rgba(255, 255, 255, 0.6);
+        --card-strong: rgba(255, 255, 255, 0.74);
+        --card-subtle: rgba(255, 255, 255, 0.46);
         --text: #10192b;
-        --muted: #64748b;
+        --muted: #475569;
         --primary: #2563eb;
         --primary-dark: #1d4ed8;
+        --primary-light: #8b7cf6;
         --primary-soft: #eaf1ff;
-        --border: #e2e8f0;
+        --border: rgba(255, 255, 255, 0.65);
+        --border-soft: rgba(15, 23, 42, 0.08);
         --danger: #b42318;
         --success: #166534;
         --success-bg: #dcfce7;
         --warn: #8a5b00;
         --warn-bg: #fff2d8;
         --danger-bg: #fde2e1;
-        --radius-lg: 20px;
-        --radius-md: 14px;
-        --shadow: 0 12px 32px rgba(15, 23, 42, 0.07);
+        --radius-lg: 28px;
+        --radius-md: 22px;
+        --radius-sm: 14px;
+        --shadow: 0 8px 32px rgba(31, 38, 135, 0.14);
+        --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+        --blur: blur(20px) saturate(160%);
       }
       * { box-sizing: border-box; }
       html { -webkit-text-size-adjust: 100%; }
@@ -30,9 +37,23 @@
         margin: 0;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         color: var(--text);
-        background: var(--bg);
+        background: var(--bg-base);
         font-size: 17px;
         line-height: 1.55;
+        min-height: 100vh;
+        position: relative;
+      }
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        background:
+          radial-gradient(circle at 12% 18%, rgba(124, 109, 246, 0.32), transparent 42%),
+          radial-gradient(circle at 88% 12%, rgba(37, 99, 235, 0.28), transparent 45%),
+          radial-gradient(circle at 15% 88%, rgba(236, 72, 153, 0.18), transparent 42%),
+          radial-gradient(circle at 90% 82%, rgba(56, 189, 248, 0.26), transparent 45%),
+          var(--bg-base);
       }
       button, input, select {
         font-family: inherit;
@@ -40,18 +61,37 @@
       h1, h2, h3, h4 { line-height: 1.25; }
       a { color: var(--primary); }
 
+      /* Shared glass-panel treatment: reused by every card-like surface below. */
+      .glass {
+        background: var(--card);
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow), var(--glass-highlight);
+        backdrop-filter: var(--blur);
+        -webkit-backdrop-filter: var(--blur);
+      }
+      @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+        .glass { background: rgba(255, 255, 255, 0.92); }
+      }
+
       /* ---------- Top bar ---------- */
       .topbar {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 16px 28px;
-        background: var(--card);
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 14px 28px;
+        background: var(--card-strong);
         border-bottom: 1px solid var(--border);
+        backdrop-filter: var(--blur);
+        -webkit-backdrop-filter: var(--blur);
+        position: sticky;
+        top: 0;
+        z-index: 200;
       }
       .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.1rem; }
       .brand .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--primary); }
-      .topbar-actions { display: flex; gap: 10px; }
+      .topbar-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 
       /* ---------- Buttons ---------- */
       .btn {
@@ -60,7 +100,7 @@
         justify-content: center;
         gap: 8px;
         border: none;
-        border-radius: 12px;
+        border-radius: var(--radius-sm);
         padding: 13px 22px;
         font-size: 1rem;
         font-weight: 600;
@@ -68,18 +108,30 @@
         min-height: 48px;
       }
       .btn:focus-visible { outline: 3px solid var(--primary-soft); outline-offset: 2px; }
-      .btn-primary { background: var(--primary); color: #fff; }
-      .btn-primary:hover { background: var(--primary-dark); }
-      .btn-secondary { background: #fff; color: var(--text); border: 1px solid var(--border); }
-      .btn-secondary:hover { background: #f1f5fb; }
-      .btn-large { padding: 20px 40px; font-size: 1.25rem; border-radius: 16px; }
-      .btn:disabled { opacity: 0.6; cursor: not-allowed; }
-      input[type="text"], input[type="number"], select {
+      .btn-primary {
+        background: linear-gradient(135deg, var(--primary), var(--primary-light));
+        color: #fff;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 6px 18px rgba(37, 99, 235, 0.35);
+      }
+      .btn-primary:hover { background: linear-gradient(135deg, var(--primary-dark), var(--primary)); }
+      .btn-secondary {
+        background: var(--card-subtle);
+        color: var(--text);
         border: 1px solid var(--border);
-        border-radius: 10px;
+        backdrop-filter: var(--blur);
+        -webkit-backdrop-filter: var(--blur);
+      }
+      .btn-secondary:hover { background: var(--card); }
+      .btn-large { padding: 20px 40px; font-size: 1.25rem; border-radius: var(--radius-md); }
+      .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+      input[type="text"], input[type="number"], select, input[type="password"] {
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius-sm);
         padding: 12px 14px;
         font-size: 1rem;
-        background: #fff;
+        background: rgba(255, 255, 255, 0.55);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
         color: var(--text);
       }
       input:focus, select:focus, button:focus-visible {
@@ -92,9 +144,10 @@
       .screen { display: none; }
       .screen.active { display: block; }
 
-      /* ---------- Landing ---------- */
-      #screen-landing .landing-wrap {
+      /* ---------- Landing / Auth ---------- */
+      .landing-wrap {
         min-height: calc(100vh - 65px);
+        width: 100%;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -102,10 +155,18 @@
       }
       .landing-card {
         max-width: 620px;
+        width: 100%;
         text-align: center;
+        padding: clamp(28px, 5vw, 56px) clamp(24px, 5vw, 48px);
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow), var(--glass-highlight);
+        backdrop-filter: var(--blur);
+        -webkit-backdrop-filter: var(--blur);
       }
       .landing-card h1 {
-        font-size: clamp(2rem, 4vw, 2.75rem);
+        font-size: clamp(1.7rem, 4vw, 2.75rem);
         margin: 0 0 14px;
       }
       .landing-card p.desc {
@@ -137,6 +198,9 @@
         border-radius: var(--radius-md);
         background: var(--card);
         border: 1px solid var(--border);
+        box-shadow: var(--glass-highlight);
+        backdrop-filter: var(--blur);
+        -webkit-backdrop-filter: var(--blur);
         color: var(--muted);
         font-weight: 500;
       }
@@ -229,7 +293,9 @@
         border: 1px solid var(--border);
         border-radius: var(--radius-md);
         padding: 20px;
-        box-shadow: var(--shadow);
+        box-shadow: var(--shadow), var(--glass-highlight);
+        backdrop-filter: var(--blur);
+        -webkit-backdrop-filter: var(--blur);
       }
       .kpi-label { color: var(--muted); font-size: 0.88rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
       .kpi-value { margin-top: 8px; font-size: 2rem; font-weight: 700; }
@@ -247,7 +313,9 @@
         border: 1px solid var(--border);
         border-radius: var(--radius-md);
         padding: 18px;
-        box-shadow: var(--shadow);
+        box-shadow: var(--shadow), var(--glass-highlight);
+        backdrop-filter: var(--blur);
+        -webkit-backdrop-filter: var(--blur);
       }
       .insight-card-title { font-weight: 700; font-size: 1.02rem; margin-bottom: 4px; }
       .insight-card-meta { color: var(--muted); font-size: 0.88rem; margin-bottom: 8px; }
@@ -273,7 +341,9 @@
         border-radius: var(--radius-md);
         padding: 16px;
         background: var(--card);
-        box-shadow: var(--shadow);
+        box-shadow: var(--shadow), var(--glass-highlight);
+        backdrop-filter: var(--blur);
+        -webkit-backdrop-filter: var(--blur);
       }
       .chart-card h4 { margin: 0 0 10px; color: var(--text); font-size: 0.95rem; }
       .chart-card canvas { width: 100% !important; height: 240px !important; }
@@ -288,7 +358,9 @@
         border: 1px solid var(--border);
         border-radius: var(--radius-md);
         padding: 14px;
-        box-shadow: var(--shadow);
+        box-shadow: var(--shadow), var(--glass-highlight);
+        backdrop-filter: var(--blur);
+        -webkit-backdrop-filter: var(--blur);
       }
       .table-toolbar { display: flex; align-items: center; justify-content: space-between; margin: 14px 0; flex-wrap: wrap; gap: 10px; }
       .toggle-row { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 0.95rem; }
@@ -298,13 +370,15 @@
         border: 1px solid var(--border);
         border-radius: var(--radius-md);
         background: var(--card);
-        box-shadow: var(--shadow);
+        box-shadow: var(--shadow), var(--glass-highlight);
+        backdrop-filter: var(--blur);
+        -webkit-backdrop-filter: var(--blur);
       }
       table { width: 100%; border-collapse: collapse; min-width: 640px; }
-      th, td { padding: 12px 14px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; font-size: 0.94rem; }
-      th { background: #f8fbff; position: sticky; top: 0; font-weight: 700; }
+      th, td { padding: 12px 14px; border-bottom: 1px solid var(--border-soft); text-align: left; vertical-align: top; font-size: 0.94rem; }
+      th { background: var(--card-strong); position: sticky; top: 0; font-weight: 700; }
       .clickable-row { cursor: pointer; }
-      .clickable-row:hover { background: #f8fbff; }
+      .clickable-row:hover { background: rgba(255, 255, 255, 0.35); }
       .clickable-row:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
 
       .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 0.82rem; font-weight: 700; }
@@ -320,7 +394,15 @@
 
       .chip { display: inline-block; background: var(--primary-soft); color: var(--primary-dark); border-radius: 999px; padding: 4px 12px; font-size: 0.85rem; font-weight: 600; margin: 0 6px 6px 0; }
 
-      details.disclosure { margin-top: 20px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--card); }
+      details.disclosure {
+        margin-top: 20px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        background: var(--card);
+        box-shadow: var(--glass-highlight);
+        backdrop-filter: var(--blur);
+        -webkit-backdrop-filter: var(--blur);
+      }
       details.disclosure > summary { cursor: pointer; padding: 14px 16px; font-weight: 600; }
       details.disclosure .disclosure-body { padding: 0 16px 16px; }
 
@@ -331,27 +413,34 @@
       .modal-backdrop {
         display: none;
         position: fixed; inset: 0;
-        background: rgba(15, 23, 42, 0.55);
+        background: rgba(15, 23, 42, 0.45);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
         align-items: center; justify-content: center;
         padding: 20px;
         z-index: 1000;
       }
       .modal-backdrop.open { display: flex; }
       .modal {
-        background: #fff;
+        background: var(--card-strong);
+        border: 1px solid var(--border);
         border-radius: var(--radius-lg);
         max-width: 720px; width: 100%;
         max-height: 86vh; overflow: auto;
-        box-shadow: 0 30px 60px rgba(2, 6, 23, 0.35);
+        box-shadow: 0 30px 60px rgba(2, 6, 23, 0.35), var(--glass-highlight);
+        backdrop-filter: var(--blur);
+        -webkit-backdrop-filter: var(--blur);
       }
       .modal-header {
-        position: sticky; top: 0; background: #fff;
+        position: sticky; top: 0; background: var(--card-strong);
+        backdrop-filter: var(--blur);
+        -webkit-backdrop-filter: var(--blur);
         display: flex; align-items: center; justify-content: space-between;
         padding: 18px 22px; border-bottom: 1px solid var(--border);
       }
       .modal-header h3 { margin: 0; font-size: 1.2rem; }
       .icon-btn {
-        background: #f1f5fb; border: none; border-radius: 10px;
+        background: var(--card-subtle); border: 1px solid var(--border); border-radius: var(--radius-sm);
         width: 40px; height: 40px; font-size: 1.1rem; cursor: pointer; color: var(--text);
       }
       .modal-body { padding: 20px 22px 28px; }
@@ -360,14 +449,14 @@
       .detail-block h4 { margin: 0 0 8px; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); }
       .detail-block .body-text { font-size: 1rem; }
       .similar-card {
-        border: 1px solid var(--border); border-radius: var(--radius-md);
-        padding: 12px 14px; background: #fafcff; margin-top: 6px;
+        border: 1px solid var(--border-soft); border-radius: var(--radius-md);
+        padding: 12px 14px; background: rgba(255, 255, 255, 0.5); margin-top: 6px;
       }
       .conversation-box {
-        border: 1px solid var(--border);
+        border: 1px solid var(--border-soft);
         border-radius: var(--radius-md);
         padding: 14px;
-        background: #fafcff;
+        background: rgba(255, 255, 255, 0.5);
         white-space: pre-wrap;
         line-height: 1.5;
       }
@@ -385,42 +474,63 @@
         display: none;
         position: sticky; top: 0; z-index: 500;
         margin: 0; border-radius: 0;
-        border-bottom: 1px solid #fecaca;
-        background: #fef2f2; color: var(--danger);
+        border-bottom: 1px solid rgba(180, 35, 24, 0.25);
+        background: rgba(254, 242, 242, 0.85);
+        backdrop-filter: var(--blur);
+        -webkit-backdrop-filter: var(--blur);
+        color: var(--danger);
         padding: 12px 28px;
       }
       .banner.show { display: block; }
       .toast-wrap { position: fixed; right: 16px; bottom: 16px; display: grid; gap: 8px; z-index: 999; }
       .toast {
-        background: #0f172a; color: #fff; border-radius: 10px; padding: 10px 14px;
+        background: rgba(15, 23, 42, 0.85);
+        backdrop-filter: var(--blur);
+        -webkit-backdrop-filter: var(--blur);
+        color: #fff; border-radius: var(--radius-sm); padding: 10px 14px;
         font-size: 0.9rem; min-width: 220px; box-shadow: 0 8px 22px rgba(2, 6, 23, 0.3);
       }
       .error {
-        color: var(--danger); background: #fff1f1;
-        border: 1px solid #f7caca; border-radius: 10px; padding: 12px;
+        color: var(--danger); background: rgba(255, 241, 241, 0.85);
+        border: 1px solid rgba(180, 35, 24, 0.2); border-radius: var(--radius-sm); padding: 12px;
       }
       .insights-list { margin: 0; padding-left: 18px; }
       .insights-list li { margin: 6px 0; font-size: 0.93rem; }
       .quick-answer-result {
         margin-top: 14px; border: 1px solid var(--border); border-radius: var(--radius-md);
         padding: 16px; background: var(--card);
+        box-shadow: var(--glass-highlight);
+        backdrop-filter: var(--blur);
+        -webkit-backdrop-filter: var(--blur);
       }
       .quick-answer-result .answer { margin: 0 0 8px; line-height: 1.5; }
       .quick-answer-result .meta { color: var(--muted); font-size: 0.92rem; }
       .search-row { display: grid; grid-template-columns: 1fr 150px 130px; gap: 10px; }
 
-      @media (max-width: 860px) {
+      @media (max-width: 900px) {
         .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         .charts-grid { grid-template-columns: 1fr; }
         .filter-bar { grid-template-columns: 1fr 1fr; }
         .search-row { grid-template-columns: 1fr; }
         .report-body { padding: 18px 16px 50px; }
-        .topbar { padding: 14px 16px; }
+        .topbar { padding: 12px 16px; }
         #screen-report .report-header { padding: 14px 16px 0; }
       }
-      @media (max-width: 520px) {
+      @media (max-width: 640px) {
         .kpi-grid { grid-template-columns: 1fr 1fr; }
         .filter-bar { grid-template-columns: 1fr; }
+        .landing-card { padding: 28px 22px; }
+        #screen-processing .processing-wrap { padding: 40px 16px; }
+        .chart-card canvas { height: 200px !important; }
+        .report-title-row h1 { font-size: 1.25rem; }
+        .tabs { gap: 2px; }
+        .tab-btn { padding: 10px 12px; font-size: 0.92rem; }
+      }
+      @media (max-width: 420px) {
+        .kpi-grid { grid-template-columns: 1fr; }
+        .btn-large { padding: 16px 24px; font-size: 1.1rem; }
+        .topbar-actions { width: 100%; justify-content: flex-start; }
+        body { font-size: 16px; }
       }
     </style>
   </head>
@@ -430,12 +540,36 @@
     <header class="topbar">
       <div class="brand"><span class="dot"></span> Conversation Intelligence</div>
       <div class="topbar-actions">
+        <span id="welcomeText" class="meta" style="display:none; margin-right:4px;"></span>
         <button id="uploadAnotherBtn" class="btn btn-secondary" style="display:none;">Upload another file</button>
+        <button id="logoutBtn" class="btn btn-secondary" style="display:none;">Log out</button>
       </div>
     </header>
 
+    <!-- ============ AUTH ============ -->
+    <section id="screen-auth" class="screen active">
+      <div class="landing-wrap">
+        <div class="landing-card" style="max-width:420px;">
+          <h1 id="authTitle">Welcome</h1>
+          <p class="desc" id="authDesc">Checking session&hellip;</p>
+          <form id="authForm" style="display:grid; gap:14px; text-align:left; margin-top:8px;">
+            <div>
+              <label for="authUsername" style="display:block; font-weight:600; margin-bottom:6px; font-size:0.9rem;">Username</label>
+              <input id="authUsername" type="text" autocomplete="username" required style="width:100%;" />
+            </div>
+            <div>
+              <label for="authPassword" style="display:block; font-weight:600; margin-bottom:6px; font-size:0.9rem;">Password</label>
+              <input id="authPassword" type="password" autocomplete="current-password" required style="width:100%;" />
+            </div>
+            <button id="authSubmitBtn" type="submit" class="btn btn-primary btn-large" style="width:100%; margin-top:4px;">Sign In</button>
+          </form>
+          <div id="authError" class="status" style="margin-top:12px;" aria-live="polite"></div>
+        </div>
+      </div>
+    </section>
+
     <!-- ============ LANDING ============ -->
-    <section id="screen-landing" class="screen active">
+    <section id="screen-landing" class="screen">
       <div class="landing-wrap">
         <div class="landing-card">
           <h1>Understand your customer conversations in minutes</h1>
@@ -626,6 +760,15 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 
     <script>
+      const welcomeTextEl = document.getElementById("welcomeText");
+      const logoutBtn = document.getElementById("logoutBtn");
+      const authTitleEl = document.getElementById("authTitle");
+      const authDescEl = document.getElementById("authDesc");
+      const authFormEl = document.getElementById("authForm");
+      const authUsernameEl = document.getElementById("authUsername");
+      const authPasswordEl = document.getElementById("authPassword");
+      const authSubmitBtn = document.getElementById("authSubmitBtn");
+      const authErrorEl = document.getElementById("authError");
       const qEl = document.getElementById("q");
       const methodEl = document.getElementById("method");
       const askBtn = document.getElementById("askBtn");
@@ -683,9 +826,136 @@
       let lastFocusedBeforeModal = null;
 
       // ---------------------------------------------------------------
+      // Auth: single-admin-account login/registration gate. Every API
+      // route requires a bearer token (enforced server-side); this wraps
+      // window.fetch once so none of the existing fetch() call sites below
+      // need to change, and handles the login/register/logout UI.
+      // ---------------------------------------------------------------
+      const AUTH_TOKEN_KEY = "authToken";
+      let authMode = "login"; // "login" | "register"
+
+      function getToken() { return localStorage.getItem(AUTH_TOKEN_KEY); }
+      function setToken(token) { localStorage.setItem(AUTH_TOKEN_KEY, token); }
+      function clearToken() { localStorage.removeItem(AUTH_TOKEN_KEY); }
+
+      const _nativeFetch = window.fetch.bind(window);
+      window.fetch = async (input, init) => {
+        const url = typeof input === "string" ? input : (input && input.url) || "";
+        const isOwnApi = url.startsWith("/");
+        const token = getToken();
+        const opts = init ? { ...init } : {};
+        if (isOwnApi && token) {
+          opts.headers = { ...(opts.headers || {}), Authorization: `Bearer ${token}` };
+        }
+        const response = await _nativeFetch(input, opts);
+        const isAuthEndpoint = url.startsWith("/auth/");
+        if (isOwnApi && !isAuthEndpoint && token && response.status === 401) {
+          // The session token is no longer valid (expired/restarted server) --
+          // drop it and send the user back to the sign-in screen.
+          clearToken();
+          showAuthScreen("login", "Your session expired. Please sign in again.");
+        }
+        return response;
+      };
+
+      function setWelcomeUser(username) {
+        welcomeTextEl.textContent = `Welcome, ${username}`;
+        welcomeTextEl.style.display = "inline";
+        logoutBtn.style.display = "inline-flex";
+      }
+
+      function hideWelcomeUser() {
+        welcomeTextEl.style.display = "none";
+        logoutBtn.style.display = "none";
+      }
+
+      function showAuthScreen(mode, message) {
+        authMode = mode;
+        hideWelcomeUser();
+        if (mode === "register") {
+          authTitleEl.textContent = "Create your account";
+          authDescEl.textContent = "Set up the admin account for this workspace.";
+          authSubmitBtn.textContent = "Create Account";
+          authPasswordEl.setAttribute("autocomplete", "new-password");
+        } else {
+          authTitleEl.textContent = "Welcome back";
+          authDescEl.textContent = "Sign in to continue.";
+          authSubmitBtn.textContent = "Sign In";
+          authPasswordEl.setAttribute("autocomplete", "current-password");
+        }
+        authErrorEl.innerHTML = message ? `<div class="error">${message}</div>` : "";
+        showScreen("auth");
+      }
+
+      async function handleAuthSubmit(e) {
+        e.preventDefault();
+        const username = authUsernameEl.value.trim();
+        const password = authPasswordEl.value;
+        if (!username || !password) return;
+        authSubmitBtn.disabled = true;
+        authErrorEl.innerHTML = "";
+        try {
+          const endpoint = authMode === "register" ? "/auth/register" : "/auth/login";
+          const res = await fetch(endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, password }),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            authErrorEl.innerHTML = `<div class="error">${data.detail || "Something went wrong."}</div>`;
+            return;
+          }
+          setToken(data.access_token);
+          authPasswordEl.value = "";
+          setWelcomeUser(username);
+          showScreen("landing");
+        } catch (err) {
+          authErrorEl.innerHTML = `<div class="error">Network error. Ensure the API server is running.</div>`;
+        } finally {
+          authSubmitBtn.disabled = false;
+        }
+      }
+      authFormEl.addEventListener("submit", handleAuthSubmit);
+
+      function logout() {
+        clearToken();
+        hideWelcomeUser();
+        authUsernameEl.value = "";
+        authPasswordEl.value = "";
+        showAuthScreen("login");
+      }
+      logoutBtn.addEventListener("click", logout);
+
+      async function initAuth() {
+        try {
+          const statusRes = await fetch("/auth/status");
+          const statusData = await statusRes.json();
+          if (!statusData.registered) {
+            showAuthScreen("register");
+            return;
+          }
+          const token = getToken();
+          if (token) {
+            const meRes = await fetch("/auth/me");
+            if (meRes.ok) {
+              const me = await meRes.json();
+              setWelcomeUser(me.username);
+              showScreen("landing");
+              return;
+            }
+            clearToken();
+          }
+          showAuthScreen("login");
+        } catch (err) {
+          authErrorEl.innerHTML = `<div class="error">Could not reach the API server.</div>`;
+        }
+      }
+
+      // ---------------------------------------------------------------
       // Screen / tab controller (presentation only — no data logic here)
       // ---------------------------------------------------------------
-      const SCREENS = ["landing", "processing", "report"];
+      const SCREENS = ["auth", "landing", "processing", "report"];
       function showScreen(name) {
         SCREENS.forEach((s) => {
           const el = document.getElementById(`screen-${s}`);
@@ -1058,9 +1328,31 @@
         }
       }
 
-      function exportAnalytics(format) {
+      async function exportAnalytics(format) {
+        // A plain navigation (window.location.href) can't carry the
+        // Authorization header the protected export routes now require, so
+        // fetch the file with auth and trigger the download via a blob URL.
         const qs = buildAnalyticsQueryString();
-        window.location.href = format === "excel" ? `/analytics/export/excel?${qs}` : `/analytics/export/csv?${qs}`;
+        const url = format === "excel" ? `/analytics/export/excel?${qs}` : `/analytics/export/csv?${qs}`;
+        try {
+          const res = await fetch(url);
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            showErrorBanner(data.detail || "Export failed.");
+            return;
+          }
+          const blob = await res.blob();
+          const objectUrl = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = objectUrl;
+          link.download = format === "excel" ? "conversation_analytics.xlsx" : "conversation_analytics.csv";
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          URL.revokeObjectURL(objectUrl);
+        } catch (err) {
+          showErrorBanner("Export failed. Ensure the API server is running.");
+        }
       }
 
       function renderIntentOptions(intents) {
@@ -1144,8 +1436,11 @@
           uploadStatusEl.textContent = "Upload complete.";
           renderUploadPreview(data);
           await loadAnalytics();
-          showTab("overview");
+          // Reveal the report screen before switching tabs -- charts must be
+          // resized while their canvas is actually visible (display:block),
+          // otherwise Chart.js sizes them against a hidden, zero-size parent.
           showScreen("report");
+          showTab("overview");
           showToast("Upload complete. Report is ready.");
         } catch (err) {
           stopProcessingSimulation();
@@ -1200,6 +1495,7 @@
       knowledgeSearchResultsEl.innerHTML = `<div class="empty-state"><div class="art">📈</div><div>Search your historical knowledge base to inspect learned patterns.</div></div>`;
       aiMatchesEl.innerHTML = `<div class="empty-state"><div class="art">🤖</div><div>Ask AI to retrieve relevant conversations with citations.</div></div>`;
       renderProcessingStages();
+      initAuth();
     </script>
   </body>
 </html>

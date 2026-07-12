@@ -91,4 +91,19 @@ class KnowledgeConversation(Base):
         return f"<KnowledgeConversation(conversation_id='{self.conversation_id}', ticket_id='{self.ticket_id}')>"
 
 
-__all__ = ["Base", "Knowledge", "ConversationThread", "KnowledgeConversation"]
+class User(Base):
+    """Application account (single-admin-account model)."""
+
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String(120), nullable=False, unique=True, index=True)
+    password_hash = Column(String(255), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    is_active = Column(Boolean, default=True)
+
+    def __repr__(self):
+        return f"<User(id={self.id}, username='{self.username}')>"
+
+
+__all__ = ["Base", "Knowledge", "ConversationThread", "KnowledgeConversation", "User"]

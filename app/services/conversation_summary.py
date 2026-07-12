@@ -95,13 +95,33 @@ _NAME_INTRO_RE = re.compile(
 )
 
 _INTENT_RULES: list[tuple[str, tuple[str, ...]]] = [
-    ("Password Reset|Authentication", ("password", "login", "log in", "locked out", "authentication", "reset my")),
+    (
+        "Password Reset|Authentication",
+        ("password", "login", "log in", "locked out", "authentication", "reset my"),
+    ),
     ("Refund Request|Billing", ("refund", "money back", "chargeback", "reimburse")),
     ("Cancellation Request|Billing", ("cancel", "cancellation", "cancel my")),
-    ("Booking Inquiry|Reservations", ("booking", "reservation", "book a", "reschedule")),
+    (
+        "Booking Inquiry|Reservations",
+        ("booking", "reservation", "book a", "reschedule"),
+    ),
     ("Parking Inquiry|Facilities", ("parking", "park my car", "garage")),
-    ("Billing Inquiry|Billing", ("invoice", "bill", "charge", "payment", "overcharged")),
-    ("Technical Issue|Technical", ("error", "bug", "not working", "broken", "crash", "doesn't work", "won't load")),
+    (
+        "Billing Inquiry|Billing",
+        ("invoice", "bill", "charge", "payment", "overcharged"),
+    ),
+    (
+        "Technical Issue|Technical",
+        (
+            "error",
+            "bug",
+            "not working",
+            "broken",
+            "crash",
+            "doesn't work",
+            "won't load",
+        ),
+    ),
 ]
 
 _POSITIVE_WORDS = {
@@ -225,7 +245,9 @@ def summarize_conversations(conversations_df: pd.DataFrame) -> pd.DataFrame:
         entities_col.append(", ".join(result["entities"]))
         product_names_col.append(", ".join(result["product_names"]))
         embedding_texts.append(
-            build_embedding_text(result["summary"], result["intent"], result["keywords"])
+            build_embedding_text(
+                result["summary"], result["intent"], result["keywords"]
+            )
         )
 
     df["summary"] = summaries
@@ -476,7 +498,9 @@ def _generate_with_optional_llm(text: str, subject: str) -> dict[str, Any] | Non
             return None
         return parsed
     except Exception:
-        logger.exception("Optional LLM summarization failed; falling back to deterministic summary.")
+        logger.exception(
+            "Optional LLM summarization failed; falling back to deterministic summary."
+        )
         return None
 
 

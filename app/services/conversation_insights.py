@@ -14,7 +14,6 @@ from app.services.conversation_analytics import (
     list_conversations,
 )
 
-
 _PRIORITY_RANK = {"low": 0, "medium": 1, "high": 2, "critical": 3}
 _RANK_PRIORITY = {v: k for k, v in _PRIORITY_RANK.items()}
 
@@ -74,7 +73,11 @@ def generate_business_insights(config: InsightsConfig | None = None) -> dict[str
     df["similarity_score"] = (
         pd.to_numeric(df["similarity_score"], errors="coerce").fillna(0.0).astype(float)
     )
-    for optional_col, default in (("intent", ""), ("category", ""), ("priority", "low")):
+    for optional_col, default in (
+        ("intent", ""),
+        ("category", ""),
+        ("priority", "low"),
+    ):
         if optional_col in df.columns:
             df[optional_col] = df[optional_col].fillna(default).astype(str)
             df.loc[df[optional_col].str.strip() == "", optional_col] = default
@@ -203,9 +206,7 @@ def _build_recurring_issues(df: pd.DataFrame) -> list[dict[str, Any]]:
         group_df = work[work["group_key"] == group_key].copy()
 
         representative_cluster = (
-            group_df["cluster_id"].value_counts().idxmax()
-            if not group_df.empty
-            else 0
+            group_df["cluster_id"].value_counts().idxmax() if not group_df.empty else 0
         )
         cluster_df = group_df[group_df["cluster_id"] == representative_cluster]
         representative_label = (
@@ -311,10 +312,13 @@ def _build_automation_opportunities(
 
 def _average_priority(group_df: pd.DataFrame) -> tuple[str, float]:
     ranks = [
-        _PRIORITY_RANK.get(str(p).strip().lower(), 0) for p in group_df["priority"].tolist()
+        _PRIORITY_RANK.get(str(p).strip().lower(), 0)
+        for p in group_df["priority"].tolist()
     ]
     avg_rank = float(sum(ranks)) / max(len(ranks), 1)
-    label = _RANK_PRIORITY.get(round(avg_rank), _RANK_PRIORITY[min(3, max(0, round(avg_rank)))])
+    label = _RANK_PRIORITY.get(
+        round(avg_rank), _RANK_PRIORITY[min(3, max(0, round(avg_rank)))]
+    )
     return label, avg_rank
 
 
@@ -365,7 +369,9 @@ def _build_emerging_issues(
         category_counts = Counter(
             str(c).strip() for c in group_df["category"].tolist() if str(c).strip()
         )
-        category_value = category_counts.most_common(1)[0][0] if category_counts else None
+        category_value = (
+            category_counts.most_common(1)[0][0] if category_counts else None
+        )
 
         representative_row = group_df[group_df["ticket_id"] == representative_ticket]
         summary_value = (
@@ -375,7 +381,9 @@ def _build_emerging_issues(
         )
 
         growth_percentage = (
-            round((growth_stats["growth_ratio"] - 1.0) * 100.0, 2) if growth_stats else None
+            round((growth_stats["growth_ratio"] - 1.0) * 100.0, 2)
+            if growth_stats
+            else None
         )
 
         emerging.append(

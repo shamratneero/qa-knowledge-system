@@ -9,6 +9,39 @@ from pydantic import BaseModel, Field
 SearchMethod = Literal["hybrid", "keyword", "fuzzy", "semantic"]
 
 
+class RegisterRequest(BaseModel):
+    """Request body for POST /auth/register."""
+
+    username: str = Field(..., min_length=3, max_length=80)
+    password: str = Field(..., min_length=8, max_length=200)
+
+
+class LoginRequest(BaseModel):
+    """Request body for POST /auth/login."""
+
+    username: str = Field(..., min_length=1, max_length=80)
+    password: str = Field(..., min_length=1, max_length=200)
+
+
+class TokenResponse(BaseModel):
+    """Access token payload returned by register/login."""
+
+    access_token: str
+    token_type: str = "bearer"
+
+
+class UserResponse(BaseModel):
+    """Current user info returned by GET /auth/me."""
+
+    username: str
+
+
+class AuthStatusResponse(BaseModel):
+    """Whether an account has been created yet."""
+
+    registered: bool
+
+
 class QuestionRequest(BaseModel):
     """Request body for POST /ask."""
 
@@ -404,6 +437,7 @@ class AIQueryResponse(BaseModel):
 
 __all__ = [
     "AskResponse",
+    "AuthStatusResponse",
     "ErrorResponse",
     "HealthResponse",
     "ConversationImportReport",
@@ -427,9 +461,13 @@ __all__ = [
     "ConversationPreviewRow",
     "EmergingIssue",
     "InsightsSummary",
+    "LoginRequest",
     "QuestionRequest",
     "RecurringIssue",
+    "RegisterRequest",
     "RootResponse",
     "SearchMethod",
     "SearchResult",
+    "TokenResponse",
+    "UserResponse",
 ]

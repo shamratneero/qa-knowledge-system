@@ -1,9 +1,12 @@
 """Application configuration using Pydantic and environment variables."""
 
+import os
+import secrets
+import warnings
 from pathlib import Path
 from typing import Optional
 
-from pydantic import ConfigDict
+from pydantic import ConfigDict, Field
 from pydantic_settings import BaseSettings
 
 
@@ -50,6 +53,11 @@ class Settings(BaseSettings):
     known_threshold: float = 0.95
     variation_threshold: float = 0.80
 
+    # Authentication (JWT)
+    secret_key: str = Field(default_factory=lambda: secrets.token_urlsafe(32))
+    algorithm: str = "HS256"
+    access_token_expire_minutes: int = 30
+
     # Logging
     log_level: str = "INFO"
     log_file: Optional[Path] = None
@@ -58,6 +66,14 @@ class Settings(BaseSettings):
     def model_post_init(self, __context: object) -> None:
         if self.log_file is not None and not str(self.log_file).strip():
             self.log_file = None
+        if not os.getenv("SECRET_KEY"):
+            warnings.warn(
+                "SECRET_KEY is not set in the environment; a random key was "
+                "generated for this process. Existing login sessions will be "
+                "invalidated on restart. Set SECRET_KEY in .env for stable "
+                "sessions.",
+                stacklevel=2,
+            )
 
     # CORS
     cors_origins: list = ["*"]

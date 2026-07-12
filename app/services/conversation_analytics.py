@@ -406,7 +406,9 @@ def _build_cluster_explanation(db, row: ConversationThread) -> str:
     sibling_keywords: set[str] = set()
     for sibling in siblings:
         sibling_keywords.update(
-            k.strip().lower() for k in str(sibling.keywords or "").split(",") if k.strip()
+            k.strip().lower()
+            for k in str(sibling.keywords or "").split(",")
+            if k.strip()
         )
     shared_keywords = sorted(own_keywords & sibling_keywords)[:5]
 

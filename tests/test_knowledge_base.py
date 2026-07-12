@@ -128,7 +128,9 @@ def test_ingest_stores_summary_fields_and_embeds_off_embedding_text(monkeypatch)
             "ticket_id": ["T1"],
             "subject": ["Password reset"],
             "conversation_text": ["Hi"],
-            "embedding_text": ["Customer forgot their password. Intent: Password Reset."],
+            "embedding_text": [
+                "Customer forgot their password. Intent: Password Reset."
+            ],
             "cluster_id": [1],
             "cluster_label": ["Password"],
             "summary": ["Customer forgot their password."],

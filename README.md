@@ -73,6 +73,21 @@ Open:
 - ReDoc: `http://127.0.0.1:8000/redoc`
 - UI: `http://127.0.0.1:8000/ui`
 
+## Authentication
+
+Every API route except the ones below requires a valid `Authorization: Bearer <token>` header. This is a **single-admin-account** system: the first `POST /auth/register` call creates the one account and registration then closes itself (subsequent attempts return `403`).
+
+Public (no token required): `GET /`, `GET /health`, `GET /ui`, `GET /docs`, `GET /redoc`, `GET /openapi.json`, `POST /auth/register`, `POST /auth/login`, `GET /auth/status`.
+
+- `GET /auth/status` — `{"registered": bool}`, tells you whether to register or log in
+- `POST /auth/register` — `{"username": "...", "password": "..."}` (password ≥ 8 chars); only works once
+- `POST /auth/login` — same body shape; returns `{"access_token": "...", "token_type": "bearer"}`
+- `GET /auth/me` — returns the current user (requires the token)
+
+The `/ui` dashboard handles this flow automatically (shows a registration form on first run, a sign-in form afterward). For direct API access, pass the returned token as `Authorization: Bearer <access_token>` on every subsequent request.
+
+Tokens are JWTs signed with `SECRET_KEY` (see Configuration below) and expire after `ACCESS_TOKEN_EXPIRE_MINUTES` (default 30).
+
 ## API Documentation
 
 ### Health & Root
@@ -132,10 +147,13 @@ Response includes:
 ```text
 app/
   main.py
+  api/
+    auth.py
   core/
     config.py
     loader.py
     logging.py
+    security.py
   models/
     database.py
     schemas.py
@@ -146,12 +164,14 @@ app/
     hybrid.py
   services/
     ai_assistant.py
+    auth.py
     cluster_labeling.py
     conversation_analytics.py
     conversation_classification.py
     conversation_clustering.py
     conversation_ingestion.py
     conversation_insights.py
+    conversation_summary.py
     database.py
     knowledge_base.py
   static/
@@ -178,16 +198,18 @@ Stored attributes include ticket metadata, reconstructed text, embedding vector 
 ### Build and Run
 
 ```bash
-docker compose up --build
+SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_urlsafe(32))") docker compose up --build
 ```
 
 - API port: `8000`
-- SQLite persistence via Docker volume mounted at `/app/data`
+- SQLite persistence via Docker volume mounted at `/app/data` (a fresh, empty database is created automatically on first run — no local dev/test data is baked into the image; see `.dockerignore`)
+- **Set `SECRET_KEY` explicitly for any real deployment.** If it's not provided, the app generates a random one at process startup and logs a warning — every login session is invalidated whenever the process restarts. Generate one once and store it in your deployment platform's secrets (not in `docker-compose.yml`, which is committed to git).
 
 ## Configuration
 
 Environment-configurable values (see `app/core/config.py`):
 
+- `SECRET_KEY`, `ALGORITHM` (default `HS256`), `ACCESS_TOKEN_EXPIRE_MINUTES` (default `30`) — JWT signing for authentication
 - docs URLs (`DOCS_URL`, `REDOC_URL`, `OPENAPI_URL`)
 - upload size limits
 - pagination limits

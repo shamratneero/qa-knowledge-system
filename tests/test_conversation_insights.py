@@ -283,7 +283,9 @@ def _patched_insights(monkeypatch, rows):
     monkeypatch.setattr(
         "app.services.conversation_insights.get_analytics_overview", fake_overview
     )
-    monkeypatch.setattr("app.services.conversation_insights.list_conversations", fake_list)
+    monkeypatch.setattr(
+        "app.services.conversation_insights.list_conversations", fake_list
+    )
 
 
 def test_emerging_issue_min_size_trigger(monkeypatch):
@@ -301,14 +303,36 @@ def test_emerging_issue_min_size_trigger(monkeypatch):
 
 def test_emerging_issue_growth_trigger(monkeypatch):
     rows = [
-        _row(id=1, ticket_id="T-1", cluster_id=2, intent="Refund Request", last_sent_at="2026-06-01T10:00:00"),
-        _row(id=2, ticket_id="T-2", cluster_id=2, intent="Refund Request", last_sent_at="2026-07-10T10:00:00"),
-        _row(id=3, ticket_id="T-3", cluster_id=2, intent="Refund Request", last_sent_at="2026-07-11T10:00:00"),
+        _row(
+            id=1,
+            ticket_id="T-1",
+            cluster_id=2,
+            intent="Refund Request",
+            last_sent_at="2026-06-01T10:00:00",
+        ),
+        _row(
+            id=2,
+            ticket_id="T-2",
+            cluster_id=2,
+            intent="Refund Request",
+            last_sent_at="2026-07-10T10:00:00",
+        ),
+        _row(
+            id=3,
+            ticket_id="T-3",
+            cluster_id=2,
+            intent="Refund Request",
+            last_sent_at="2026-07-11T10:00:00",
+        ),
     ]
     _patched_insights(monkeypatch, rows)
 
     data = generate_business_insights(
-        InsightsConfig(rapid_growth_multiplier=1.5, rapid_growth_window_days=7, rapid_growth_min_recent=2)
+        InsightsConfig(
+            rapid_growth_multiplier=1.5,
+            rapid_growth_window_days=7,
+            rapid_growth_min_recent=2,
+        )
     )
     emerging = {item["intent"]: item for item in data["emerging_issues"]}
     assert "Refund Request" in emerging
@@ -318,8 +342,20 @@ def test_emerging_issue_growth_trigger(monkeypatch):
 
 def test_emerging_issue_priority_trigger(monkeypatch):
     rows = [
-        _row(id=1, ticket_id="T-1", cluster_id=3, intent="Technical Issue", priority="high"),
-        _row(id=2, ticket_id="T-2", cluster_id=3, intent="Technical Issue", priority="high"),
+        _row(
+            id=1,
+            ticket_id="T-1",
+            cluster_id=3,
+            intent="Technical Issue",
+            priority="high",
+        ),
+        _row(
+            id=2,
+            ticket_id="T-2",
+            cluster_id=3,
+            intent="Technical Issue",
+            priority="high",
+        ),
     ]
     _patched_insights(monkeypatch, rows)
 
@@ -332,13 +368,22 @@ def test_emerging_issue_priority_trigger(monkeypatch):
 
 def test_emerging_issue_card_fields_present(monkeypatch):
     rows = [
-        _row(id=i, ticket_id=f"T-{i}", cluster_id=4, intent="Cancellation Request", category="Billing", priority="high")
+        _row(
+            id=i,
+            ticket_id=f"T-{i}",
+            cluster_id=4,
+            intent="Cancellation Request",
+            category="Billing",
+            priority="high",
+        )
         for i in range(1, 4)
     ]
     _patched_insights(monkeypatch, rows)
 
     data = generate_business_insights()
-    item = next(x for x in data["emerging_issues"] if x["intent"] == "Cancellation Request")
+    item = next(
+        x for x in data["emerging_issues"] if x["intent"] == "Cancellation Request"
+    )
     assert item["category"] == "Billing"
     assert item["conversation_count"] == 3
     assert item["average_priority"] in {"low", "medium", "high", "critical"}
@@ -346,13 +391,33 @@ def test_emerging_issue_card_fields_present(monkeypatch):
     assert item["representative_ticket"]
 
 
-def test_emerging_issues_do_not_flood_with_singleton_low_priority_conversations(monkeypatch):
+def test_emerging_issues_do_not_flood_with_singleton_low_priority_conversations(
+    monkeypatch,
+):
     """Direct regression test for the reported noise bug: a lone, low-priority,
     non-growing conversation must never show up as an emerging issue."""
     rows = [
-        _row(id=1, ticket_id="T-1", cluster_id=1, intent="General Inquiry", priority="low"),
-        _row(id=2, ticket_id="T-2", cluster_id=2, intent="Parking Inquiry", priority="low"),
-        _row(id=3, ticket_id="T-3", cluster_id=3, intent="Booking Inquiry", priority="medium"),
+        _row(
+            id=1,
+            ticket_id="T-1",
+            cluster_id=1,
+            intent="General Inquiry",
+            priority="low",
+        ),
+        _row(
+            id=2,
+            ticket_id="T-2",
+            cluster_id=2,
+            intent="Parking Inquiry",
+            priority="low",
+        ),
+        _row(
+            id=3,
+            ticket_id="T-3",
+            cluster_id=3,
+            intent="Booking Inquiry",
+            priority="medium",
+        ),
     ]
     _patched_insights(monkeypatch, rows)
 
@@ -362,13 +427,36 @@ def test_emerging_issues_do_not_flood_with_singleton_low_priority_conversations(
 
 def test_automation_opportunities_group_by_intent(monkeypatch):
     rows = [
-        _row(id=1, ticket_id="T-1", cluster_id=1, cluster_label="Password A", intent="Password Reset", status="duplicate"),
-        _row(id=2, ticket_id="T-2", cluster_id=2, cluster_label="Password B", intent="Password Reset", status="duplicate"),
-        _row(id=3, ticket_id="T-3", cluster_id=3, cluster_label="Password C", intent="Password Reset", status="duplicate"),
+        _row(
+            id=1,
+            ticket_id="T-1",
+            cluster_id=1,
+            cluster_label="Password A",
+            intent="Password Reset",
+            status="duplicate",
+        ),
+        _row(
+            id=2,
+            ticket_id="T-2",
+            cluster_id=2,
+            cluster_label="Password B",
+            intent="Password Reset",
+            status="duplicate",
+        ),
+        _row(
+            id=3,
+            ticket_id="T-3",
+            cluster_id=3,
+            cluster_label="Password C",
+            intent="Password Reset",
+            status="duplicate",
+        ),
     ]
     _patched_insights(monkeypatch, rows)
 
-    data = generate_business_insights(InsightsConfig(duplicate_rate_threshold=0.5, large_cluster_min_size=100))
+    data = generate_business_insights(
+        InsightsConfig(duplicate_rate_threshold=0.5, large_cluster_min_size=100)
+    )
     opportunities = {item["intent"]: item for item in data["automation_opportunities"]}
     assert "Password Reset" in opportunities
     assert opportunities["Password Reset"]["conversation_count"] == 3

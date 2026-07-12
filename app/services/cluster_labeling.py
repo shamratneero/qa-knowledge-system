@@ -40,9 +40,7 @@ from app.services.conversation_summary import (
 _GENERIC_SUMMARY_SENTINEL = "customer opened a conversation with a general greeting"
 _SPEAKER_LINE_RE = re.compile(r"^[^:\n]{1,60}:\s*")
 _WORD_RE = re.compile(r"[a-zA-Z][a-zA-Z0-9']{2,}")
-_LABEL_SAFE_TOKENS = {
-    token for phrase in LABEL_SAFE_TERMS for token in phrase.split()
-}
+_LABEL_SAFE_TOKENS = {token for phrase in LABEL_SAFE_TERMS for token in phrase.split()}
 _RAW_TEXT_STOP_WORDS = sorted(ENGLISH_STOP_WORDS | _LABEL_SAFE_TOKENS)
 
 
@@ -84,9 +82,7 @@ class DeterministicClusterLabelGenerator:
         if column not in cluster_df.columns:
             return None
         values = [
-            str(v).strip()
-            for v in cluster_df[column].tolist()
-            if str(v or "").strip()
+            str(v).strip() for v in cluster_df[column].tolist() if str(v or "").strip()
         ]
         if not values:
             return None
@@ -108,7 +104,9 @@ class DeterministicClusterLabelGenerator:
             return None
 
         representative = Counter(summaries).most_common(1)[0][0]
-        body = re.sub(r"^customer reported:\s*", "", representative, flags=re.IGNORECASE)
+        body = re.sub(
+            r"^customer reported:\s*", "", representative, flags=re.IGNORECASE
+        )
         body = strip_pii(body).rstrip(".")
 
         terms = self._top_terms(body, self.max_terms)
@@ -162,7 +160,9 @@ class DeterministicClusterLabelGenerator:
 
             # Strip "Speaker: " line prefixes -- the primary source of leaked
             # names in raw conversation text -- then blank out PII.
-            stripped_lines = [_SPEAKER_LINE_RE.sub("", line) for line in text.splitlines()]
+            stripped_lines = [
+                _SPEAKER_LINE_RE.sub("", line) for line in text.splitlines()
+            ]
             sanitized = strip_pii("\n".join(stripped_lines))
             if sanitized:
                 documents.append(sanitized)
@@ -242,7 +242,11 @@ class DeterministicClusterLabelGenerator:
 
         tokens = [t.lower() for t in _WORD_RE.findall(text)]
         filtered = [
-            t for t in tokens if t not in ENGLISH_STOP_WORDS and t not in LABEL_SAFE_TERMS and t not in banned
+            t
+            for t in tokens
+            if t not in ENGLISH_STOP_WORDS
+            and t not in LABEL_SAFE_TERMS
+            and t not in banned
         ]
         if not filtered:
             return []

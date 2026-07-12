@@ -103,7 +103,10 @@ def test_label_falls_back_to_category_when_intent_missing():
         {
             "ticket_id": ["T1", "T2"],
             "subject": ["Billing", "Billing"],
-            "conversation_text": ["Roger: I was overcharged.", "Jackie: Billing issue."],
+            "conversation_text": [
+                "Roger: I was overcharged.",
+                "Jackie: Billing issue.",
+            ],
             "intent": ["", ""],
             "category": ["Billing", "Billing"],
             "cluster_id": [7, 7],

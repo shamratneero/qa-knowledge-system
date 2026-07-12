@@ -126,7 +126,9 @@ def test_run_ai_query_uses_intent_and_summary_fields(monkeypatch):
         lambda: {"summary": {"redundancy_percentage": 50.0}},
     )
 
-    result = ai_assistant.run_ai_query("What password issues have we seen before?", limit=5)
+    result = ai_assistant.run_ai_query(
+        "What password issues have we seen before?", limit=5
+    )
 
     assert result["answer"]
     assert result["generation_mode"] == "deterministic"

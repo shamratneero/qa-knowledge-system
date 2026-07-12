@@ -10,12 +10,14 @@ from typing import Any
 
 from fastapi import FastAPI, HTTPException, File, UploadFile, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from starlette.requests import Request
 import pandas as pd
 
+from app.api.auth import router as auth_router
 from app.core.config import settings
 from app.core.logging import logger
+from app.core.security import decode_access_token
 from app.models.schemas import (
     AIQueryRequest,
     AIQueryResponse,
@@ -100,6 +102,37 @@ app.add_middleware(
     allow_methods=settings.cors_allow_methods,
     allow_headers=settings.cors_allow_headers,
 )
+
+app.include_router(auth_router)
+
+# Every route requires a valid bearer token except this allowlist. An
+# allowlist (rather than decorating ~25 routes individually) guarantees
+# nothing is accidentally left unprotected.
+_PUBLIC_PATHS = {
+    "/",
+    "/health",
+    "/ui",
+    settings.docs_url,
+    settings.redoc_url,
+    settings.openapi_url,
+    "/auth/register",
+    "/auth/login",
+    "/auth/status",
+}
+
+
+@app.middleware("http")
+async def require_auth(request: Request, call_next):
+    if request.method == "OPTIONS" or request.url.path in _PUBLIC_PATHS:
+        return await call_next(request)
+
+    auth_header = request.headers.get("Authorization", "")
+    token = auth_header[7:] if auth_header.lower().startswith("bearer ") else None
+    payload = decode_access_token(token) if token else None
+    if payload is None or not payload.get("sub"):
+        return JSONResponse(status_code=401, content={"detail": "Not authenticated."})
+
+    return await call_next(request)
 
 
 @app.middleware("http")

@@ -12,3 +12,5 @@ services:
         value: 0.0.0.0
       - key: PORT
         value: 8000
+      - key: SECRET_KEY
+        sync: false # set manually in the Render dashboard; do not commit a real value here

@@ -147,9 +147,7 @@ def test_llm_failure_falls_back_to_deterministic(monkeypatch):
         conversation_summary.importlib, "import_module", lambda name: FakeOpenAIModule
     )
 
-    result = summarize_conversation(
-        "Customer: I forgot my password and cannot login."
-    )
+    result = summarize_conversation("Customer: I forgot my password and cannot login.")
     assert result["intent"] == "Password Reset"
 
 
@@ -173,7 +171,9 @@ def test_trailing_signoff_on_an_informative_line_is_stripped(monkeypatch):
     of the line is real content, not just whole signature-only lines."""
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
 
-    conversation = "Customer: I cannot login, my password is not working. Regards, Roger"
+    conversation = (
+        "Customer: I cannot login, my password is not working. Regards, Roger"
+    )
     result = summarize_conversation(conversation)
 
     assert "roger" not in result["summary"].lower()
@@ -213,7 +213,7 @@ def test_self_introduced_name_is_stripped(monkeypatch):
 
 
 def test_sentence_initial_self_introduction_is_stripped(monkeypatch):
-    """"This is Matthew" (capital T, sentence-initial) must be stripped just
+    """ "This is Matthew" (capital T, sentence-initial) must be stripped just
     like "my name is Roger" -- the intro-phrase match must be case-insensitive
     even though the captured name itself stays case-sensitive."""
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)

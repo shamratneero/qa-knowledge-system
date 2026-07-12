@@ -12,3 +12,9 @@ venv
 *.md
 !data/README.md
 tests
+
+# Runtime SQLite database -- never bake local/dev/test state (including any
+# accounts already registered, or test conversation data) into the image.
+# The app creates a fresh one via init_db() on first run in the container.
+data/*.db
+data/*.sqlite3

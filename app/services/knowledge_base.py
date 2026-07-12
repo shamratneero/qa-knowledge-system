@@ -46,7 +46,9 @@ def ingest_conversations_to_knowledge_base(
     init_db()
     _ensure_knowledge_conversation_schema()
 
-    text_col = "embedding_text" if "embedding_text" in work.columns else "conversation_text"
+    text_col = (
+        "embedding_text" if "embedding_text" in work.columns else "conversation_text"
+    )
     texts = [str(x or "") for x in work[text_col].tolist()]
     embeddings = _encode_texts(texts)
 

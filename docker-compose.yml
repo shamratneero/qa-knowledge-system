@@ -17,6 +17,10 @@ services:
       DEFAULT_PAGE_SIZE: "100"
       MAX_PAGE_SIZE: "500"
       UVICORN_WORKERS: "2"
+      # Required: a stable signing key for auth sessions. Without it the app
+      # generates a random one on every restart, invalidating all logins.
+      # Generate with: python3 -c "import secrets; print(secrets.token_urlsafe(32))"
+      SECRET_KEY: "${SECRET_KEY:?Set SECRET_KEY in your shell/secrets manager before running docker compose up}"
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')\""]
