@@ -278,7 +278,21 @@ What it does differently from every other deployment path (see `packaging/deskto
 - Loads the embedding model from a bundled local copy (`packaging/bundled_model/`) with `HF_HUB_OFFLINE=1` — no network access needed, ever.
 - Runs in its own native window (menu bar item + Dock icon), not your default browser — a WKWebView pointed at the local server, with a delegate implementing the file-picker, JS alert/confirm, and file-download callbacks that a bare WKWebView doesn't provide out of the box.
 
-**Known limitations**: it's Mac-only, each install has its own local, independent data (no sharing between installs), and it's unsigned — without an Apple Developer ID (paid), macOS Gatekeeper will show an "unidentified developer" warning on first open; right-click → Open bypasses it. The resulting `.dmg` is large (~400MB compressed) because it bundles PyTorch + the full ML stack.
+**Known limitations**: it's Mac-only, each install has its own local, independent data (no sharing between installs), and it's unsigned — without an Apple Developer ID (paid), macOS Gatekeeper will show an "unidentified developer" warning on first open; right-click → Open bypasses it. The resulting `.dmg` is large (~400-460MB compressed) because it bundles PyTorch + the full ML stack.
+
+**Apple Silicon vs. Intel**: PyInstaller builds for whatever architecture the Python running it is. This repo produces one arch-specific `.dmg` per machine you build on — there's no single universal build, because PyTorch stopped shipping Intel (x86_64) macOS wheels after `torch==2.2.2`, and newer `sentence-transformers`/`numpy` releases aren't compatible with that old torch. Building for the "wrong" chip and opening it on a Mac of the other architecture fails with "This application is not supported on this Mac."
+
+- On an Apple Silicon (M-series) Mac: the steps above just work with your normal `.venv`.
+- On an Intel Mac: same, `.venv`'s pip will naturally resolve compatible (older) versions.
+- Cross-building an Intel `.dmg` *from* an Apple Silicon Mac needs a separate x86_64 Python environment run under Rosetta (`arch -x86_64 ...`), with dependencies pinned to what still supports `torch==2.2.2`:
+  ```bash
+  arch -x86_64 python3.11 -m venv .venv-x86_64   # needs an actual x86_64 Python 3.11+, e.g. via a Rosetta Homebrew at /usr/local
+  .venv-x86_64/bin/pip install -r requirements.txt
+  .venv-x86_64/bin/pip install "sentence-transformers<4" "numpy<2" --force-reinstall
+  .venv-x86_64/bin/pip install pyinstaller rumps pyobjc-framework-Cocoa pyobjc-framework-WebKit
+  .venv-x86_64/bin/python3 -m PyInstaller packaging/desktop_app.spec --noconfirm --distpath dist_x86_64 --workpath build_x86_64
+  ```
+  Then package `dist_x86_64/ConversationIntelligence.app` into a `.dmg` the same way `build_dmg.sh` does for the arm64 build.
 
 ## Future Roadmap
 
