@@ -260,6 +260,26 @@ GitHub Actions (`.github/workflows/ci.yml`) runs on push/PR:
 - lint checks
 - unit/integration tests
 
+## Desktop App (macOS .dmg)
+
+For handing the app to someone directly instead of hosting it: `packaging/` bundles the whole app (Python + all dependencies + the embedding model, fully offline) into a double-click-able `ConversationIntelligence.app`, wrapped in a `.dmg`.
+
+```bash
+source .venv/bin/activate
+pip install pyinstaller
+bash packaging/stage_model.sh                       # stages the embedding model for offline bundling (needs the model already in your local HF cache -- run the app locally once first if it isn't)
+pyinstaller packaging/desktop_app.spec --noconfirm
+bash packaging/build_dmg.sh                          # -> dist/ConversationIntelligence.dmg
+```
+
+What it does differently from every other deployment path (see `packaging/desktop_launcher.py`):
+- Stores its SQLite database in `~/Library/Application Support/Conversation Intelligence/` (writable, survives app updates) instead of a path inside the read-only app bundle.
+- Generates a `SECRET_KEY` once on first launch and persists it there, so logging in survives quitting and reopening the app.
+- Loads the embedding model from a bundled local copy (`packaging/bundled_model/`) with `HF_HUB_OFFLINE=1` — no network access needed, ever.
+- Runs in its own native window (menu bar item + Dock icon), not your default browser — a WKWebView pointed at the local server, with a delegate implementing the file-picker, JS alert/confirm, and file-download callbacks that a bare WKWebView doesn't provide out of the box.
+
+**Known limitations**: it's Mac-only, each install has its own local, independent data (no sharing between installs), and it's unsigned — without an Apple Developer ID (paid), macOS Gatekeeper will show an "unidentified developer" warning on first open; right-click → Open bypasses it. The resulting `.dmg` is large (~400MB compressed) because it bundles PyTorch + the full ML stack.
+
 ## Future Roadmap
 
 - Role-based access and tenant isolation

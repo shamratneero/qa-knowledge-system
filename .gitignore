@@ -30,6 +30,13 @@ MANIFEST
 # PyInstaller
 *.manifest
 *.spec
+!packaging/desktop_app.spec
+
+# Desktop app build inputs/outputs -- bundled_model/ is regenerated locally
+# from the local Hugging Face cache (see README's Desktop App section); it's
+# ~90MB of binary model weights and must never be committed, same reasoning
+# as the data/knowledge.db incident this project already had.
+packaging/bundled_model/
 
 # Unit test / coverage reports
 htmlcov/
